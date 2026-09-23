@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+model User {
+ id String @id @default(cuid())
+ name String
+ email String @unique
+ school String?
+ graduationYear Int?
+ targetRoles String?
+ companies Company[]
+ activities Activity[]
+ createdAt DateTime @default(now())
+}
+model Company {
+ id String @id @default(cuid())
+ name String @unique
+ website String?
+ industry String?
+ category String?
+ targetStatus String @default("Target")
+ notes String?
+ userId String?
+ user User? @relation(fields:[userId],references:[id])
+ opportunities Opportunity[]
+ contacts Contact[]
+ tasks Task[]
+ createdAt DateTime @default(now())
+}
+model Opportunity {
+ id String @id @default(cuid())
+ companyId String
+ company Company @relation(fields:[companyId],references:[id])
+ roleTitle String
+ practiceArea String
+ location String
+ jobUrl String?
+ source String
+ dateFound DateTime @default(now())
+ applicationOpenDate DateTime?
+ applicationDeadline DateTime?
+ estimatedStartDate DateTime?
+ employmentType String?
+ compensation String?
+ description String?
+ qualifications String?
+ notes String?
+ priority String @default("MEDIUM")
+ status String @default("SAVED")
+ rawPostingText String?
+ applications Application[]
+ tasks Task[]
+ createdAt DateTime @default(now())
+ @@index([companyId,applicationDeadline])
+ @@index([practiceArea,priority])
+}
+model Application {
+ id String @id @default(cuid())
+ opportunityId String @unique
+ opportunity Opportunity @relation(fields:[opportunityId],references:[id])
+ dateStarted DateTime @default(now())
+ dateSubmitted DateTime?
+ currentStage String @default("RESEARCHING")
+ status String @default("Active")
+ resumeId String?
+ resume Document? @relation("ResumeApplications",fields:[resumeId],references:[id])
+ coverLetterId String?
+ coverLetter Document? @relation("CoverLetterApplications",fields:[coverLetterId],references:[id])
+ referralContactId String?
+ referralContact Contact? @relation("ReferralApplications",fields:[referralContactId],references:[id])
+ recruiterContactId String?
+ recruiterContact Contact? @relation("RecruiterApplications",fields:[recruiterContactId],references:[id])
+ applicationPortalUrl String?
+ notes String?
+ interviews Interview[]
+ tasks Task[]
+ createdAt DateTime @default(now())
+ @@index([currentStage])
+}
+model Contact {
+ id String @id @default(cuid())
+ firstName String
+ lastName String
+ companyId String?
+ company Company? @relation(fields:[companyId],references:[id])
+ title String?
+ email String?
+ phone String?
+ linkedinUrl String?
+ school String?
+ relationshipType String @default("CONSULTANT")
+ location String?
+ notes String?
+ lastContactDate DateTime?
+ nextFollowUpDate DateTime?
+ relationshipStrength String @default("New")
+ interactions Interaction[]
+ referralApplications Application[] @relation("ReferralApplications")
+ recruiterApplications Application[] @relation("RecruiterApplications")
+ tasks Task[]
+ createdAt DateTime @default(now())
+ @@index([companyId,nextFollowUpDate])
+}
+model Interaction {
+ id String @id @default(cuid())
+ contactId String
+ contact Contact @relation(fields:[contactId],references:[id])
+ date DateTime @default(now())
+ type String
+ summary String
+ notes String?
+ followUpNeeded Boolean @default(false)
+ followUpDate DateTime?
+ createdAt DateTime @default(now())
+ @@index([contactId,date])
+}
+model Interview {
+ id String @id @default(cuid())
+ applicationId String
+ application Application @relation(fields:[applicationId],references:[id])
+ date DateTime
+ interviewRound String
+ interviewType String
+ interviewer String?
+ location String?
+ meetingLink String?
+ caseType String?
+ behavioralTopics String?
+ notes String?
+ result String?
+ tasks Task[]
+ createdAt DateTime @default(now())
+}
+model Document {
+ id String @id @default(cuid())
+ name String
+ version String?
+ dateCreated DateTime @default(now())
+ filePath String?
+ type String
+ targetRole String?
+ notes String?
+ isDefault Boolean @default(false)
+ resumeApplications Application[] @relation("ResumeApplications")
+ coverLetterApplications Application[] @relation("CoverLetterApplications")
+ createdAt DateTime @default(now())
+}
+model Task {
+ id String @id @default(cuid())
+ title String
+ description String?
+ dueDate DateTime?
+ priority String @default("MEDIUM")
+ status String @default("NOT_STARTED")
+ companyId String?
+ company Company? @relation(fields:[companyId],references:[id])
+ opportunityId String?
+ opportunity Opportunity? @relation(fields:[opportunityId],references:[id])
+ applicationId String?
+ application Application? @relation(fields:[applicationId],references:[id])
+ contactId String?
+ contact Contact? @relation(fields:[contactId],references:[id])
+ interviewId String?
+ interview Interview? @relation(fields:[interviewId],references:[id])
+ createdAt DateTime @default(now())
+ @@index([status,dueDate])
+}
+model Activity {
+ id String @id @default(cuid())
+ userId String?
+ user User? @relation(fields:[userId],references:[id])
+ type String
+ message String
+ entityType String?
+ entityId String?
+ createdAt DateTime @default(now())
+ @@index([createdAt])
+}

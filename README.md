@@ -28,7 +28,7 @@ npm start                # serve the production build (Railway command)
 
 ## Railway deployment notes
 
-Railway can build and start the app from `railway.json`. Set `DATABASE_URL` to a production PostgreSQL connection string before deploying persistent data. The current Prisma datasource is SQLite for local development, so changing to PostgreSQL requires a Prisma datasource/provider migration and a generated migration. Railway assigns `PORT`; do not set it manually unless overriding locally.
+Local development uses `prisma/schema.prisma` with SQLite. Railway production uses `prisma/schema.postgres.prisma` and a PostgreSQL `DATABASE_URL`; never run a production reset or seed production automatically. Configure Railway to build with `npx prisma generate --schema prisma/schema.postgres.prisma && npm run build`, run `npx prisma migrate deploy --schema prisma/schema.postgres.prisma` as its pre-deploy command, start with `npm start`, and health-check `/api/health`. Railway assigns `PORT`; do not set it manually unless overriding locally. If the service is not opted into Railway config-as-code, set those commands in the Railway service settings as well as keeping `railway.json` aligned.
 
 `uploads/` and the SQLite database are local filesystem storage and are not durable across Railway deployments or restarts. Use PostgreSQL for data and object storage (such as S3/R2) for uploaded documents before treating the deployment as production-ready.
 

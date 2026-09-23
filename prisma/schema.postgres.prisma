@@ -17,6 +17,7 @@ model User {
  targetConsultingTypes Json?
  onboardingCompleted Boolean @default(false)
  companies Company[]
+ offices Office[]
  opportunities Opportunity[]
  contacts Contact[]
  tasks Task[]
@@ -42,6 +43,8 @@ model Company {
  id String @id @default(cuid())
  name String
  website String?
+ firmType String?
+ priority String @default("MEDIUM")
  industry String?
  category String?
  targetStatus String @default("Target")
@@ -51,8 +54,27 @@ model Company {
  opportunities Opportunity[]
  contacts Contact[]
  tasks Task[]
+ offices Office[]
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
  @@unique([userId,name])
+ @@index([userId,priority])
+}
+model Office {
+ id String @id @default(cuid())
+ companyId String
+ company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ city String
+ region String?
+ country String?
+ targetStatus String @default("TARGET")
+ priority String @default("MEDIUM")
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@unique([companyId,city,region,country])
+ @@index([userId,priority])
 }
 model Opportunity {
  id String @id @default(cuid())

@@ -7,50 +7,77 @@
     <title>Consulting Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main>
-      <nav>
-        <a class="brand" href="/">Consulting<span>Hub</span></a>
-        <a class="nav-link" href="#focus">Your recruiting command center <span>↗</span></a>
-      </nav>
-
-      <section class="hero">
-        <p class="eyebrow">Consulting recruiting, simplified</p>
-        <h1>Focus on the<br /><em>next right move.</em></h1>
-        <p class="intro">A calm, organized place to prepare for interviews, manage opportunities, and build a consulting career you are proud of.</p>
-        <a class="button" href="#focus">Explore your hub <span>→</span></a>
-      </section>
-
-      <section class="dashboard" id="focus">
-        <div class="dashboard-header">
-          <p class="eyebrow">Today at a glance</p>
-          <p class="date">Start where it matters most</p>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/"><span class="brand-mark">c</span><span>consulting<span>hub</span></span></a>
+        <nav aria-label="Primary navigation">
+          <a class="active" href="#dashboard"><b>▦</b> Dashboard</a>
+          <a href="#opportunities"><b>▱</b> Opportunities</a>
+          <a href="#applications"><b>▤</b> Applications</a>
+          <a href="#networking"><b>◎</b> Networking</a>
+          <a href="#timeline"><b>◫</b> Timeline</a>
+          <a href="#documents"><b>▧</b> Documents</a>
+          <a href="#tasks"><b>☑</b> Tasks</a>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="avatar">CH</div>
+          <div><strong>Your workspace</strong><span>Ready to build</span></div>
+          <span class="more">•••</span>
         </div>
-        <div class="cards">
-          <article class="card featured">
-            <p class="label">INTERVIEW PREP</p>
-            <h2>Sharpen your case<br />thinking.</h2>
-            <p>Practice deliberately, track what you learn, and build confidence one case at a time.</p>
-            <span class="arrow">→</span>
-          </article>
-          <article class="card">
-            <p class="label">OPPORTUNITIES</p>
-            <p class="metric">0</p>
-            <h3>Roles to pursue</h3>
-            <p class="muted">Your pipeline will appear here.</p>
-          </article>
-          <article class="card">
-            <p class="label">THIS WEEK</p>
-            <p class="metric">01</p>
-            <h3>Intentional action</h3>
-            <p class="muted">Make your first move toward a stronger recruiting process.</p>
-          </article>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div class="workspace-label"><span>⌕</span> Recruiting workspace</div>
+          <a class="add-button" href="#opportunities"><span>+</span> Add opportunity</a>
+        </header>
+
+        <div class="content" id="dashboard">
+          <section class="page-head">
+            <div>
+              <p class="eyebrow">YOUR CONSULTING RECRUITING HUB</p>
+              <h1>Make the next move count.</h1>
+              <p class="subhead">A single, focused place for your opportunities, interview prep, and recruiting momentum.</p>
+            </div>
+            <a class="outline-button" href="#applications">View pipeline <span>↗</span></a>
+          </section>
+
+          <section class="metrics" aria-label="Recruiting summary">
+            <article class="metric-card"><div class="metric-icon">▱</div><p>Active opportunities</p><strong>00</strong><span>Start building your list</span></article>
+            <article class="metric-card"><div class="metric-icon blue">↗</div><p>Applications submitted</p><strong>00</strong><span>Keep your pipeline moving</span></article>
+            <article class="metric-card"><div class="metric-icon orange">◫</div><p>Interviews ahead</p><strong>00</strong><span>Practice with intention</span></article>
+            <article class="metric-card"><div class="metric-icon green">✦</div><p>Weekly priorities</p><strong>01</strong><span>One focused next step</span></article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="panel" id="applications">
+              <div class="panel-head"><div><h2>Application funnel</h2><p>Where your recruiting process stands</p></div><a href="#opportunities">Full pipeline →</a></div>
+              <div class="funnel-row"><span>Researching</span><div><i style="width:82%"></i></div><b>0</b></div>
+              <div class="funnel-row"><span>Preparing</span><div><i style="width:61%"></i></div><b>0</b></div>
+              <div class="funnel-row"><span>Applied</span><div><i style="width:38%"></i></div><b>0</b></div>
+              <div class="funnel-row"><span>Interviewing</span><div><i style="width:18%"></i></div><b>0</b></div>
+            </article>
+            <article class="panel" id="tasks">
+              <div class="panel-head"><div><h2>Priority tasks</h2><p>Focus for this week</p></div><a href="#tasks">View all →</a></div>
+              <div class="task"><span class="check"></span><div><strong>Build your target company list</strong><p>Start with 10 firms you would be excited to learn from.</p></div><span class="badge">TODAY</span></div>
+              <div class="task muted-task"><span class="check"></span><div><strong>Your next action will appear here</strong><p>Create momentum with one deliberate step.</p></div></div>
+            </article>
+            <article class="panel" id="opportunities">
+              <div class="panel-head"><div><h2>Opportunities</h2><p>Roles worth pursuing</p></div><span class="dots">•••</span></div>
+              <div class="empty-state"><div>▱</div><strong>Your pipeline starts here.</strong><p>Add your first consulting role and keep every detail in one place.</p><a href="#dashboard">Add opportunity <span>→</span></a></div>
+            </article>
+            <article class="panel" id="networking">
+              <div class="panel-head"><div><h2>Networking follow-ups</h2><p>Keep your relationships warm</p></div><a href="#networking">All contacts →</a></div>
+              <div class="contact"><span class="contact-avatar">+</span><div><strong>Make your first connection</strong><p>Track coffee chats, referrals, and follow-ups.</p></div><span class="due">NEXT</span></div>
+              <div class="contact"><span class="contact-avatar soft">↗</span><div><strong>Thoughtful outreach wins</strong><p>Keep a simple record of every conversation.</p></div></div>
+            </article>
+          </section>
         </div>
-      </section>
-    </main>
-    <footer>Built for thoughtful consulting candidates.</footer>
+      </main>
+    </div>
   </body>
 </html>

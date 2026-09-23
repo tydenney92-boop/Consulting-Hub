@@ -1,0 +1,28 @@
+-- Add secure account and recruiting-profile fields.
+ALTER TABLE "User" ADD COLUMN "passwordHash" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "User" ADD COLUMN "recruitingFor" TEXT;
+ALTER TABLE "User" ADD COLUMN "targetRecruitingYear" TEXT;
+ALTER TABLE "User" ADD COLUMN "targetConsultingTypes" JSONB;
+ALTER TABLE "User" ADD COLUMN "onboardingCompleted" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+DROP INDEX IF EXISTS "Company_name_key";
+CREATE UNIQUE INDEX "Company_userId_name_key" ON "Company"("userId", "name");
+CREATE TABLE "Session" ("id" TEXT NOT NULL,"tokenHash" TEXT NOT NULL,"userId" TEXT NOT NULL,"expiresAt" TIMESTAMP(3) NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "Session_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "Session_tokenHash_key" ON "Session"("tokenHash");
+CREATE INDEX "Session_userId_expiresAt_idx" ON "Session"("userId", "expiresAt");
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Opportunity" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Application" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Contact" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Interaction" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Interview" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Document" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Task" ADD COLUMN "userId" TEXT;
+ALTER TABLE "Opportunity" ADD CONSTRAINT "Opportunity_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Application" ADD CONSTRAINT "Application_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Contact" ADD CONSTRAINT "Contact_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Interaction" ADD CONSTRAINT "Interaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Interview" ADD CONSTRAINT "Interview_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Document" ADD CONSTRAINT "Document_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Task" ADD CONSTRAINT "Task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX "Opportunity_userId_companyId_applicationDeadline_idx" ON "Opportunity"("userId", "companyId", "applicationDeadline");

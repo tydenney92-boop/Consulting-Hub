@@ -10,7 +10,8 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "test:workflows": "tsx server/src/workflow-check.ts"
+    "test:workflows": "tsx server/src/workflow-check.ts",
+    "test:auth": "rm -f /private/tmp/consulting-auth-test.db; DATABASE_URL=file:/private/tmp/consulting-auth-test.db npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | sqlite3 /private/tmp/consulting-auth-test.db; DATABASE_URL=file:/private/tmp/consulting-auth-test.db npm run build --workspace server && DATABASE_URL=file:/private/tmp/consulting-auth-test.db tsx server/src/auth-ownership-check.ts && DATABASE_URL=file:/private/tmp/consulting-auth-test.db tsx server/src/cookie-production-check.ts"
   },
   "workspaces": ["client", "server"],
   "devDependencies": { "concurrently": "^9.1.2", "prisma": "^6.7.0", "tsx": "^4.19.3", "typescript": "^5.7.2" },

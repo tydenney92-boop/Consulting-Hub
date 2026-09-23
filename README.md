@@ -10,7 +10,7 @@ cp .env.example .env
 npx prisma generate
 # First-time database setup (works around a local Prisma schema-engine issue):
 npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | sqlite3 prisma/dev.db
-npm run db:seed
+ALLOW_DEMO_SEED=true npm run db:seed
 npm run dev
 ```
 
@@ -21,7 +21,7 @@ Open `http://localhost:5173`.
 ```bash
 npm run dev              # React and Express together
 npm run build            # production typecheck/build
-npm run db:seed          # reset to the realistic demo data
+ALLOW_DEMO_SEED=true npm run db:seed  # reset to the realistic demo data (development only)
 npm run test:workflows   # verify core seed fixtures
 npm start                # serve the production build (Railway command)
 ```

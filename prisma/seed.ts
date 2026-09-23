@@ -1,8 +1,10 @@
 import { PrismaClient } from '@prisma/client';
+import { scryptSync } from 'node:crypto';
 const db=new PrismaClient(), d=(n:number)=>new Date(Date.now()+n*864e5);
 async function main(){
+ if(process.env.NODE_ENV==='production'||process.env.ALLOW_DEMO_SEED!=='true')throw new Error('Demo seed data requires ALLOW_DEMO_SEED=true and is disabled in production.');
  await db.activity.deleteMany();await db.task.deleteMany();await db.interview.deleteMany();await db.interaction.deleteMany();await db.application.deleteMany();await db.contact.deleteMany();await db.opportunity.deleteMany();await db.document.deleteMany();await db.company.deleteMany();await db.user.deleteMany();
- const user=await db.user.create({data:{name:'Tyler Denney',email:'tyler@example.com',school:'Brigham Young University',graduationYear:2027,targetRoles:'Management, Economic, Strategy Consulting'}});
+ const seedSalt='consulting-hub-demo-salt',seedHash=`${seedSalt}:${scryptSync('password123',seedSalt,64).toString('hex')}`;const user=await db.user.create({data:{name:'Tyler Denney',email:'tyler@example.com',passwordHash:seedHash,school:'Brigham Young University',graduationYear:2027,recruitingFor:'Internship',targetRecruitingYear:'Summer 2027',targetConsultingTypes:['MBB','Strategy Consulting'],onboardingCompleted:true}});
  const companyNames=['Bain & Company','Boston Consulting Group','McKinsey & Company','EY','PwC','Protiviti','Cicero Group','Charles River Associates','Cornerstone Research','Bates White','Credera'];
  const cs=await Promise.all(companyNames.map((name,i)=>db.company.create({data:{name,industry:'Professional Services',category:i>6?'Economic Consulting':'Management Consulting',userId:user.id,notes:name==='Bain & Company'?'Salt Lake City office is a priority.':null}})));
  const get=(n:string)=>cs.find(c=>c.name===n)!;

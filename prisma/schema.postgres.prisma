@@ -9,32 +9,57 @@ model User {
  id String @id @default(cuid())
  name String
  email String @unique
+ passwordHash String
  school String?
  graduationYear Int?
- targetRoles String?
+ recruitingFor String?
+ targetRecruitingYear String?
+ targetConsultingTypes Json?
+ onboardingCompleted Boolean @default(false)
  companies Company[]
+ opportunities Opportunity[]
+ contacts Contact[]
+ tasks Task[]
+ documents Document[]
+ applications Application[]
+ interactions Interaction[]
+ interviews Interview[]
  activities Activity[]
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ sessions Session[]
+}
+model Session {
+ id String @id @default(cuid())
+ tokenHash String @unique
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ @@index([userId,expiresAt])
 }
 model Company {
  id String @id @default(cuid())
- name String @unique
+ name String
  website String?
  industry String?
  category String?
  targetStatus String @default("Target")
  notes String?
  userId String?
- user User? @relation(fields:[userId],references:[id])
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  opportunities Opportunity[]
  contacts Contact[]
  tasks Task[]
  createdAt DateTime @default(now())
+ @@unique([userId,name])
 }
 model Opportunity {
  id String @id @default(cuid())
  companyId String
  company Company @relation(fields:[companyId],references:[id])
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  roleTitle String
  practiceArea String
  location String
@@ -55,13 +80,15 @@ model Opportunity {
  applications Application[]
  tasks Task[]
  createdAt DateTime @default(now())
- @@index([companyId,applicationDeadline])
+ @@index([userId,companyId,applicationDeadline])
  @@index([practiceArea,priority])
 }
 model Application {
  id String @id @default(cuid())
  opportunityId String @unique
  opportunity Opportunity @relation(fields:[opportunityId],references:[id])
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  dateStarted DateTime @default(now())
  dateSubmitted DateTime?
  currentStage String @default("RESEARCHING")
@@ -87,6 +114,8 @@ model Contact {
  lastName String
  companyId String?
  company Company? @relation(fields:[companyId],references:[id])
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  title String?
  email String?
  phone String?
@@ -109,6 +138,8 @@ model Interaction {
  id String @id @default(cuid())
  contactId String
  contact Contact @relation(fields:[contactId],references:[id])
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  date DateTime @default(now())
  type String
  summary String
@@ -122,6 +153,8 @@ model Interview {
  id String @id @default(cuid())
  applicationId String
  application Application @relation(fields:[applicationId],references:[id])
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  date DateTime
  interviewRound String
  interviewType String
@@ -138,6 +171,8 @@ model Interview {
 model Document {
  id String @id @default(cuid())
  name String
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  version String?
  dateCreated DateTime @default(now())
  filePath String?
@@ -152,6 +187,8 @@ model Document {
 model Task {
  id String @id @default(cuid())
  title String
+ userId String?
+ user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  description String?
  dueDate DateTime?
  priority String @default("MEDIUM")

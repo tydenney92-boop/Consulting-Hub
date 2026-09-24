@@ -21,7 +21,10 @@ async function main(){
   const updatedFirm=await expect('update User A firm',request(`/api/companies/${firm.id}`,{method:'PATCH',body:JSON.stringify({priority:'LOW',notes:'Focused relationship plan'})},aCookie),200).then(x=>x.json());if(updatedFirm.priority!=='LOW'||updatedFirm.notes!=='Focused relationship plan')fail('Firm update did not persist.');
   const opportunity=await expect('create User A opportunity',request('/api/opportunities',{method:'POST',body:JSON.stringify({company:'A-only Firm',roleTitle:'Associate',practiceArea:'Strategy Consulting',location:'Provo, UT',userId:'not-user-a'})},aCookie),201).then(x=>x.json());
   await expect('create User A task',request('/api/tasks',{method:'POST',body:JSON.stringify({title:'A-only task',userId:'not-user-a'})},aCookie),201);
-  await expect('create User A contact',request('/api/contacts',{method:'POST',body:JSON.stringify({firstName:'Ava',lastName:'Owner',company:'A-only Firm',userId:'not-user-a'})},aCookie),201);
+  const contact=await expect('create User A networking contact',request('/api/contacts',{method:'POST',body:JSON.stringify({firstName:'Ava',lastName:'Owner',companyId:firm.id,officeId:office.id,school:'BYU alumni',source:'ALUMNI',networkingStage:'COFFEE_CHAT',referralStatus:'POTENTIAL',userId:'not-user-a'})},aCookie),201).then(x=>x.json());
+  await expect('log first networking interaction',request(`/api/contacts/${contact.id}/interactions`,{method:'POST',body:JSON.stringify({type:'COFFEE_CHAT',summary:'Discussed Dallas office',followUpDate:'2026-10-10',userId:'not-user-a'})},aCookie),201);
+  await expect('log duplicate follow-up interaction',request(`/api/contacts/${contact.id}/interactions`,{method:'POST',body:JSON.stringify({type:'EMAIL',summary:'Sent thank-you',followUpDate:'2026-10-10'})},aCookie),201);
+  const contactDetail=await expect('read contact relationship history',request(`/api/contacts/${contact.id}`,{},aCookie),200).then(x=>x.json());if(contactDetail.interactions.length!==2||contactDetail.tasks.length!==1||contactDetail.office.id!==office.id||!contactDetail.lastContactDate)fail('Networking history, office, or de-duplicated follow-up did not persist.');
   await expect('create User A application',request(`/api/opportunities/${opportunity.id}/application`,{method:'POST',body:'{}'},aCookie),201);
   await expect('block deletion of linked firm',request(`/api/companies/${firm.id}`,{method:'DELETE'},aCookie),409);
   await expect('logout User A',request('/api/auth/logout',{method:'POST'},aCookie),204);
@@ -37,6 +40,8 @@ async function main(){
   await expect('User B delete of User A record',request(`/api/opportunities/${opportunity.id}`,{method:'DELETE'},bCookie),404);
   await expect('User B read of User A firm',request(`/api/companies/${firm.id}`,{},bCookie),404);
   await expect('User B delete of User A office',request(`/api/offices/${office.id}`,{method:'DELETE'},bCookie),404);
+  await expect('User B read of User A networking contact',request(`/api/contacts/${contact.id}`,{},bCookie),404);
+  await expect('User B interaction with User A networking contact',request(`/api/contacts/${contact.id}/interactions`,{method:'POST',body:JSON.stringify({type:'EMAIL',summary:'Unauthorized'})},bCookie),404);
   const bMe=await expect('client userId ignored',request(`/api/auth/me?userId=${a.user.id}`,{},bCookie),200).then(x=>x.json());if(bMe.user.id===a.user.id)fail('Client-supplied user ID overrode the authenticated identity.');
   await expect('invalid session',request('/api/auth/me',{},'consulting_hub_session=invalid'),401);
   if(stderr)fail(`Server emitted stderr: ${stderr}`);

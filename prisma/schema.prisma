@@ -66,6 +66,7 @@ model Office {
  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
  userId String
  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ contacts Contact[]
  city String
  region String?
  country String?
@@ -136,6 +137,8 @@ model Contact {
  lastName String
  companyId String?
  company Company? @relation(fields:[companyId],references:[id])
+ officeId String?
+ office Office? @relation(fields:[officeId],references:[id])
  userId String?
  user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  title String?
@@ -144,6 +147,9 @@ model Contact {
  linkedinUrl String?
  school String?
  relationshipType String @default("CONSULTANT")
+ source String @default("OTHER")
+ networkingStage String @default("IDENTIFIED")
+ referralStatus String @default("NONE")
  location String?
  notes String?
  lastContactDate DateTime?
@@ -154,6 +160,8 @@ model Contact {
  recruiterApplications Application[] @relation("RecruiterApplications")
  tasks Task[]
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([userId,nextFollowUpDate])
  @@index([companyId,nextFollowUpDate])
 }
 model Interaction {
@@ -168,6 +176,7 @@ model Interaction {
  notes String?
  followUpNeeded Boolean @default(false)
  followUpDate DateTime?
+ followUpTaskId String?
  createdAt DateTime @default(now())
  @@index([contactId,date])
 }

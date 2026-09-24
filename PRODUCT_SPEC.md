@@ -10,7 +10,7 @@ Each account owns its recruiting data. Core workflows are: target a firm, manage
 
 ## Core entities
 
-User, Company (firm), Contact, Interaction, Task, Opportunity, Application, Interview, and Document. Every private record is user-scoped at the database and API layers. Office support is planned; it is not yet a standalone model.
+User, Company (firm), Office, Contact, Interaction, Task, Opportunity, Application, Interview, and Document. Every private record is user-scoped at the database and API layers. Offices are user-owned target locations associated with firms.
 
 ## Current foundation
 
@@ -22,9 +22,12 @@ Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Ca
 
 ## Milestones
 
-1. Secure accounts, user-owned data, Companies, Networking, Interactions, follow-up Tasks, and a live dashboard; add office support as the firm model expands.
-2. Complete opportunity/application and interview workflows.
-3. Preparation modules and integrations.
+1. Secure accounts and user-owned data.
+2. Firms and target offices.
+3. Networking CRM: contact enrichment, interaction history, and follow-up workflow.
+4. Opportunity/application pipeline and interview workflows.
+5. Actionable recruiting dashboard.
+6. Preparation modules and integrations.
 
 ## UX principles
 

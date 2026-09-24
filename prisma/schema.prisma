@@ -245,6 +245,8 @@ model Task {
  dueDate DateTime?
  priority String @default("MEDIUM")
  status String @default("NOT_STARTED")
+ taskType String @default("GENERAL")
+ completedAt DateTime?
  companyId String?
  company Company? @relation(fields:[companyId],references:[id])
  opportunityId String?
@@ -257,6 +259,7 @@ model Task {
  interview Interview? @relation(fields:[interviewId],references:[id])
  createdAt DateTime @default(now())
  @@index([status,dueDate])
+ @@index([userId,status,dueDate])
 }
 model Activity {
  id String @id @default(cuid())

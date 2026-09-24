@@ -207,6 +207,9 @@ model Document {
  version String?
  dateCreated DateTime @default(now())
  filePath String?
+ storageKey String? @unique
+ mimeType String?
+ sizeBytes Int?
  type String
  targetRole String?
  notes String?
@@ -214,6 +217,9 @@ model Document {
  resumeApplications Application[] @relation("ResumeApplications")
  coverLetterApplications Application[] @relation("CoverLetterApplications")
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+
+ @@index([userId, type])
 }
 model Task {
  id String @id @default(cuid())

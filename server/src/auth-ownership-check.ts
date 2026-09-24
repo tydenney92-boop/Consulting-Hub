@@ -1,16 +1,19 @@
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import fs from 'node:fs/promises';
 
 const port=Number(process.env.AUTH_TEST_PORT||4199),base=`http://127.0.0.1:${port}`;
 const fail=(message:string)=>{throw new Error(message)};
 const expect=async(label:string,promise:Promise<Response>,status:number)=>{const response=await promise;if(response.status!==status)fail(`${label}: expected ${status}, got ${response.status} (${await response.text()})`);return response};
 const request=(path:string,options:RequestInit={},cookie?:string)=>fetch(base+path,{...options,headers:{'Content-Type':'application/json',...(cookie?{cookie}:{}),...(options.headers||{})}});
 const cookieFrom=(response:Response)=>{const value=response.headers.get('set-cookie');if(!value)throw new Error('Session response did not set a cookie.');if(!value.includes('HttpOnly')||!value.includes('SameSite=Lax'))fail('Session cookie is missing HttpOnly or SameSite=Lax.');return value.split(';')[0]};
+const upload=(files:{name:string,type:string,contents:string}[],type:string,cookie:string,userId?:string)=>{const body=new FormData();for(const file of files)body.append('files',new Blob([file.contents],{type:file.type}),file.name);body.append('type',type);if(userId)body.append('userId',userId);return fetch(base+'/api/documents',{method:'POST',headers:{cookie},body})};
+const waitForServer=async()=>{for(let attempt=0;attempt<40;attempt++){try{if((await fetch(base+'/api/health')).ok)return}catch{}await new Promise(resolve=>setTimeout(resolve,100))}fail('Server did not start.')};
 
 async function main(){
- const server=spawn('node',['server/dist/index.js'],{env:{...process.env,PORT:String(port),NODE_ENV:'development'},stdio:['ignore','pipe','pipe']});let stderr='';server.stderr.on('data',chunk=>stderr+=chunk);
+ const uploadDir='/private/tmp/consulting-auth-uploads';await fs.rm(uploadDir,{recursive:true,force:true});let stderr='';const start=()=>{const child=spawn('node',['server/dist/index.js'],{env:{...process.env,PORT:String(port),NODE_ENV:'development',UPLOAD_DIR:uploadDir},stdio:['ignore','pipe','pipe']});child.stderr.on('data',chunk=>stderr+=chunk);return child};let server=start();
  try{
-  for(let attempt=0;attempt<40;attempt++){try{if((await fetch(base+'/api/health')).ok)break}catch{}await new Promise(resolve=>setTimeout(resolve,100));if(attempt===39)fail('Server did not start.');}
+  await waitForServer();
   await expect('health',request('/api/health'),200); // health is intentionally public
   await expect('unauthenticated dashboard',request('/api/dashboard'),401);
   const aRegister=await expect('register User A',request('/api/auth/register',{method:'POST',body:JSON.stringify({name:'User A',email:'user-a@example.test',password:'correct horse battery staple'})}),201),aCookie=cookieFrom(aRegister),a=await aRegister.json();
@@ -31,6 +34,23 @@ async function main(){
   await expect('invalidated User A session',request('/api/auth/me',{},aCookie),401);
   const aLogin=await expect('log User A back in',request('/api/auth/login',{method:'POST',body:JSON.stringify({email:'user-a@example.test',password:'correct horse battery staple'})}),200),aCookie2=cookieFrom(aLogin);
   const aMe=await expect('persisted login session',request('/api/auth/me',{},aCookie2),200).then(x=>x.json());if(aMe.user.school!=='BYU'||aMe.user.onboardingCompleted!==true)fail('Profile did not persist after login.');
+  const multiUpload=await expect('multi-file document upload',upload([{name:'consulting-resume.pdf',type:'application/pdf',contents:'resume'},{name:'official-transcript.pdf',type:'application/pdf',contents:'transcript'},{name:'headshot.jpg',type:'image/jpeg',contents:'headshot'}],'OTHER',aCookie2),201).then(x=>x.json());if(multiUpload.documents.length!==3||multiUpload.documents.some((x:any)=>'storageKey'in x||'filePath'in x))fail('Document upload returned unsafe storage metadata.');
+  const [resume,transcript,headshot]=multiUpload.documents;
+  await expect('tag resume',request(`/api/documents/${resume.id}`,{method:'PATCH',body:JSON.stringify({type:'RESUME'})},aCookie2),200);
+  await expect('tag transcript',request(`/api/documents/${transcript.id}`,{method:'PATCH',body:JSON.stringify({type:'TRANSCRIPT'})},aCookie2),200);
+  await expect('tag headshot',request(`/api/documents/${headshot.id}`,{method:'PATCH',body:JSON.stringify({type:'HEADSHOT'})},aCookie2),200);
+  const secondResume=await expect('upload second resume',upload([{name:'consulting-resume-v2.pdf',type:'application/pdf',contents:'resume v2'}],'RESUME',aCookie2),201).then(x=>x.json()).then(x=>x.documents[0]);
+  await expect('set first resume default',request(`/api/documents/${resume.id}/default`,{method:'POST'},aCookie2),200);
+  let aDocuments=await expect('list User A documents',request('/api/documents',{},aCookie2),200).then(x=>x.json());if(aDocuments.filter((x:any)=>x.type==='RESUME'&&x.isDefault).length!==1||!aDocuments.find((x:any)=>x.id===resume.id)?.isDefault)fail('Default resume was not set uniquely.');
+  await expect('set second resume default',request(`/api/documents/${secondResume.id}/default`,{method:'POST'},aCookie2),200);
+  aDocuments=await expect('verify changed default resume',request('/api/documents',{},aCookie2),200).then(x=>x.json());if(aDocuments.filter((x:any)=>x.type==='RESUME'&&x.isDefault).length!==1||!aDocuments.find((x:any)=>x.id===secondResume.id)?.isDefault)fail('Changing the default resume was not atomic.');
+  await expect('download owned document',fetch(base+`/api/documents/${resume.id}/download`,{headers:{cookie:aCookie2}}),200);
+  await expect('delete current default resume',request(`/api/documents/${secondResume.id}`,{method:'DELETE'},aCookie2),204);
+  await expect('restore first default resume',request(`/api/documents/${resume.id}/default`,{method:'POST'},aCookie2),200);
+  await expect('clear default when resume retagged',request(`/api/documents/${resume.id}`,{method:'PATCH',body:JSON.stringify({type:'OTHER'})},aCookie2),200);
+  aDocuments=await expect('verify default cleared after retag',request('/api/documents',{},aCookie2),200).then(x=>x.json());if(aDocuments.some((x:any)=>x.isDefault))fail('Changing a default resume type did not clear default state.');
+  const partial=await expect('partial upload rejects unsafe extension',upload([{name:'valid-writing-sample.docx',type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',contents:'sample'},{name:'unsafe.exe',type:'application/octet-stream',contents:'nope'}],'WRITING_SAMPLE',aCookie2),207).then(x=>x.json());if(partial.documents.length!==1||partial.rejected.length!==1)fail('Invalid documents prevented valid documents from uploading.');
+  const persistedDocumentId=partial.documents[0].id;server.kill('SIGTERM');await once(server,'exit');server=start();await waitForServer();await expect('file persists across server restart',fetch(base+`/api/documents/${persistedDocumentId}/download`,{headers:{cookie:aCookie2}}),200);
   const bRegister=await expect('register User B',request('/api/auth/register',{method:'POST',body:JSON.stringify({name:'User B',email:'user-b@example.test',password:'correct horse battery staple'})}),201),bCookie=cookieFrom(bRegister);
   for(const path of ['/api/companies','/api/opportunities','/api/contacts','/api/applications','/api/tasks','/api/documents']){const body=await expect(`User B ${path}`,request(path,{},bCookie),200).then(x=>x.json());if(body.length!==0)fail(`${path} leaked User A data to User B.`)}
   const timeline=await expect('User B timeline',request('/api/timeline',{},bCookie),200).then(x=>x.json());if(Object.values(timeline).some((items:any)=>items.length))fail('Timeline leaked User A data to User B.');
@@ -42,10 +62,17 @@ async function main(){
   await expect('User B delete of User A office',request(`/api/offices/${office.id}`,{method:'DELETE'},bCookie),404);
   await expect('User B read of User A networking contact',request(`/api/contacts/${contact.id}`,{},bCookie),404);
   await expect('User B interaction with User A networking contact',request(`/api/contacts/${contact.id}/interactions`,{method:'POST',body:JSON.stringify({type:'EMAIL',summary:'Unauthorized'})},bCookie),404);
+  await expect('User B document metadata access',request(`/api/documents/${persistedDocumentId}`,{},bCookie),404);
+  await expect('User B document download access',fetch(base+`/api/documents/${persistedDocumentId}/download`,{headers:{cookie:bCookie}}),404);
+  await expect('User B document type update',request(`/api/documents/${persistedDocumentId}`,{method:'PATCH',body:JSON.stringify({type:'RESUME'})},bCookie),404);
+  await expect('User B set User A default resume',request(`/api/documents/${persistedDocumentId}/default`,{method:'POST'},bCookie),404);
+  await expect('User B delete User A document',request(`/api/documents/${persistedDocumentId}`,{method:'DELETE'},bCookie),404);
+  await expect('client document userId ignored',upload([{name:'b-only-resume.pdf',type:'application/pdf',contents:'b'}],'RESUME',bCookie,a.user.id),201);
+  const bDocuments=await expect('User B only sees their document',request('/api/documents',{},bCookie),200).then(x=>x.json());if(bDocuments.length!==1||bDocuments[0].name!=='b-only-resume.pdf')fail('Client-supplied document userId overrode authenticated ownership.');
   const bMe=await expect('client userId ignored',request(`/api/auth/me?userId=${a.user.id}`,{},bCookie),200).then(x=>x.json());if(bMe.user.id===a.user.id)fail('Client-supplied user ID overrode the authenticated identity.');
   await expect('invalid session',request('/api/auth/me',{},'consulting_hub_session=invalid'),401);
   if(stderr)fail(`Server emitted stderr: ${stderr}`);
   console.log('✓ Auth/session/onboarding persistence and two-user isolation verified.');
- }finally{server.kill('SIGTERM');await once(server,'exit');}
+ }finally{server.kill('SIGTERM');await once(server,'exit');await fs.rm(uploadDir,{recursive:true,force:true});}
 }
 main().catch(error=>{console.error(error);process.exitCode=1});

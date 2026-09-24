@@ -130,6 +130,8 @@ model Application {
  resume Document? @relation("ResumeApplications",fields:[resumeId],references:[id])
  coverLetterId String?
  coverLetter Document? @relation("CoverLetterApplications",fields:[coverLetterId],references:[id])
+ transcriptId String?
+ transcript Document? @relation("TranscriptApplications",fields:[transcriptId],references:[id])
  referralContactId String?
  referralContact Contact? @relation("ReferralApplications",fields:[referralContactId],references:[id])
  recruiterContactId String?
@@ -227,6 +229,7 @@ model Document {
  isDefault Boolean @default(false)
  resumeApplications Application[] @relation("ResumeApplications")
  coverLetterApplications Application[] @relation("CoverLetterApplications")
+ transcriptApplications Application[] @relation("TranscriptApplications")
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
 

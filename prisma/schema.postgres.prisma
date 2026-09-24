@@ -67,6 +67,7 @@ model Office {
  userId String
  user User @relation(fields:[userId],references:[id],onDelete:Cascade)
  contacts Contact[]
+ opportunities Opportunity[]
  city String
  region String?
  country String?
@@ -81,6 +82,10 @@ model Opportunity {
  id String @id @default(cuid())
  companyId String
  company Company @relation(fields:[companyId],references:[id])
+ officeId String?
+ office Office? @relation(fields:[officeId],references:[id])
+ networkingContactId String?
+ networkingContact Contact? @relation("OpportunityNetworkingContact",fields:[networkingContactId],references:[id])
  userId String?
  user User? @relation(fields:[userId],references:[id],onDelete:Cascade)
  roleTitle String
@@ -93,16 +98,21 @@ model Opportunity {
  applicationDeadline DateTime?
  estimatedStartDate DateTime?
  employmentType String?
+ recruitingSeason String?
  compensation String?
  description String?
  qualifications String?
  notes String?
  priority String @default("MEDIUM")
  status String @default("SAVED")
+ referralStatus String @default("NONE")
+ transcriptRequired Boolean @default(false)
+ assessmentRequired Boolean @default(false)
  rawPostingText String?
  applications Application[]
  tasks Task[]
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
  @@index([userId,companyId,applicationDeadline])
  @@index([practiceArea,priority])
 }
@@ -158,6 +168,7 @@ model Contact {
  interactions Interaction[]
  referralApplications Application[] @relation("ReferralApplications")
  recruiterApplications Application[] @relation("RecruiterApplications")
+ networkingOpportunities Opportunity[] @relation("OpportunityNetworkingContact")
  tasks Task[]
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt

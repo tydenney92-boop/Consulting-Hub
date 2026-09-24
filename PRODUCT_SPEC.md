@@ -25,9 +25,10 @@ Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Ca
 1. Secure accounts and user-owned data.
 2. Firms and target offices.
 3. Networking CRM: contact enrichment, interaction history, and follow-up workflow.
-4. Opportunity/application pipeline and interview workflows.
-5. Actionable recruiting dashboard.
-6. Preparation modules and integrations.
+4. Opportunity/application pipeline and document selection.
+5. Actionable recruiting dashboard and tasks.
+6. Interview tracking: scheduling, outcomes, preparation tasks, and application/firm context.
+7. Preparation modules and integrations.
 
 ## UX principles
 
@@ -36,3 +37,5 @@ Professional, calm, and efficient. Prefer useful empty states, clear forms, and 
 ## Data and security
 
 Authenticated identity is derived server-side; API clients never select a user ID. Every read and mutation is ownership-scoped. Credentials, session secrets, uploads, and databases are excluded from version control. Production migrations must be additive and never reset or seed production data automatically.
+
+Interview timestamps store the intended instant in UTC together with an IANA timezone (normally the candidate's browser timezone). Clients submit ISO datetimes with an offset; the API rejects timezone-less local strings so server UTC cannot silently shift a recruiting date. Existing interview timestamps are never reinterpreted.

@@ -171,6 +171,7 @@ model Contact {
  interactions Interaction[]
  referralApplications Application[] @relation("ReferralApplications")
  recruiterApplications Application[] @relation("RecruiterApplications")
+ interviews Interview[] @relation("InterviewContact")
  networkingOpportunities Opportunity[] @relation("OpportunityNetworkingContact")
  tasks Task[]
  createdAt DateTime @default(now())
@@ -203,15 +204,26 @@ model Interview {
  date DateTime
  interviewRound String
  interviewType String
+ timezone String @default("America/Denver")
  interviewer String?
+ interviewerContactId String?
+ interviewerContact Contact? @relation("InterviewContact",fields:[interviewerContactId],references:[id],onDelete:SetNull)
  location String?
  meetingLink String?
  caseType String?
  behavioralTopics String?
  notes String?
+ preparationNotes String?
  result String?
+ outcome String @default("PENDING")
+ completedAt DateTime?
+ archivedAt DateTime?
  tasks Task[]
  createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([userId,date])
+ @@index([applicationId,date])
+ @@index([userId,outcome])
 }
 model Document {
  id String @id @default(cuid())

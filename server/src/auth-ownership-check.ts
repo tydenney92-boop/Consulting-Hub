@@ -95,6 +95,7 @@ async function main(){
   await expect('client document userId ignored',upload([{name:'b-only-resume.pdf',type:'application/pdf',contents:'b'}],'RESUME',bCookie,a.user.id),201);
   const bDocuments=await expect('User B only sees their document',request('/api/documents',{},bCookie),200).then(x=>x.json());if(bDocuments.length!==1||bDocuments[0].name!=='b-only-resume.pdf')fail('Client-supplied document userId overrode authenticated ownership.');
   const bMe=await expect('client userId ignored',request(`/api/auth/me?userId=${a.user.id}`,{},bCookie),200).then(x=>x.json());if(bMe.user.id===a.user.id)fail('Client-supplied user ID overrode the authenticated identity.');
+  const cleanupContact=await expect('create contact cleanup fixture',request('/api/contacts',{method:'POST',body:JSON.stringify({firstName:'Cleanup',lastName:'Only'})},bCookie),201).then(x=>x.json());await expect('create contact cleanup interaction',request(`/api/contacts/${cleanupContact.id}/interactions`,{method:'POST',body:JSON.stringify({type:'EMAIL',summary:'Synthetic cleanup history'})},bCookie),201);await expect('delete owned contact and interaction history',request(`/api/contacts/${cleanupContact.id}`,{method:'DELETE'},bCookie),204);await expect('deleted contact stays inaccessible',request(`/api/contacts/${cleanupContact.id}`,{},bCookie),404);
   await expect('invalid session',request('/api/auth/me',{},'consulting_hub_session=invalid'),401);
   if(stderr)fail(`Server emitted stderr: ${stderr}`);
   console.log('✓ Auth/session/onboarding persistence and two-user isolation verified.');

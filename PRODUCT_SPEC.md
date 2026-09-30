@@ -38,6 +38,8 @@ Professional, calm, and efficient. Prefer useful empty states, clear forms, and 
 
 ## Data and security
 
+Opportunity expiration is derived from its date-only application deadline being earlier than today, never stored or automatically archived. The Opportunities workspace defaults to Open (not archived and not expired); Expired excludes archived records, Archived is explicit, and All includes both. Passed deadlines and expired Ready-to-Apply prospecting actions no longer appear on the dashboard. Application stages, assessments, interviews, tasks, networking, documents, and direct detail access remain independent of expiration. Dashboard expiration uses the browser's validated IANA timezone, falling back to the configured recruiting timezone (America/Denver by default) for API clients. Existing task/interview timing is unchanged. Browser deadline presentation uses local calendar dates, not UTC-to-local conversion of midnight deadline timestamps. Expiration/lifecycle checks run within the isolated opportunity-detail suite.
+
 Authenticated identity is derived server-side; API clients never select a user ID. Every read and mutation is ownership-scoped. Credentials, session secrets, uploads, and databases are excluded from version control. Production migrations must be additive and never reset or seed production data automatically.
 
 Interview timestamps store the intended instant in UTC together with an IANA timezone (normally the candidate's browser timezone). Clients submit ISO datetimes with an offset; the API rejects timezone-less local strings so server UTC cannot silently shift a recruiting date. Existing interview timestamps are never reinterpreted.

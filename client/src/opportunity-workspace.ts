@@ -18,9 +18,11 @@ export const opportunityStage = (item: any) => item.applications?.[0]?.currentSt
 export const filterOpportunities = (items: any[], filters: any, now = new Date()) => items.filter(item => {
   const haystack = [item.company?.name, item.roleTitle, item.location, item.office?.city, item.office?.region].filter(Boolean).join(' ').toLowerCase();
   const archived = item.status === 'CLOSED';
+  const expired = deadlineState(item.applicationDeadline, now) === 'passed';
+  const activity = filters.activity ?? 'active';
   return (!filters.q || haystack.includes(filters.q.toLowerCase()))
     && (!filters.stage || opportunityStage(item) === filters.stage)
     && (!filters.priority || item.priority === filters.priority)
-    && (!filters.activity || (filters.activity === 'archived' ? archived : !archived))
+    && (activity === '' || (activity === 'archived' ? archived : activity === 'expired' ? !archived && expired : !archived && !expired))
     && (!filters.deadline || deadlineState(item.applicationDeadline, now) === filters.deadline);
 });

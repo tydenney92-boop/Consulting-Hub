@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {PrismaClient} from '@prisma/client';
 import {parsePosting} from './quick-add.js';
+import {checkExpiration} from './expiration-check.js';
 
 async function main() {
   const {opportunityExternalLink, relatedOpportunityAction, opportunityPath, opportunityIdFromHash}=await import(new URL('../../client/src/opportunity-detail-model.ts',import.meta.url).href);
@@ -85,6 +86,7 @@ async function main() {
     for(const [roleTitle,jobUrl,companyId] of [['Posting only','https://example.org/posting',firm.id],['Careers only',null,firm.id]])await request('/opportunities',a.cookie,'POST',{companyId,roleTitle,jobUrl},201);
     const noUrlFirm=await request('/companies',a.cookie,'POST',{name:'Synthetic No URL Firm'},201).then(r=>r.json());
     await request('/opportunities',a.cookie,'POST',{companyId:noUrlFirm.id,roleTitle:'No URL Analyst',status:'CLOSED'},201);
+    await checkExpiration({request,prisma,a,b,firm,op,application,contact,interview,task});
     assert.equal(errors,'');
     console.log('✓ Detail context, URL priority/validation/persistence, Quick Add preservation, archive/applied and nested ownership passed.');
     if(process.env.KEEP_DETAIL_QA==='true'){

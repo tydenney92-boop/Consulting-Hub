@@ -10,6 +10,14 @@ const rows = [
 assert.equal(deadlineState('2026-09-20', now), 'passed');
 assert.equal(deadlineState('2026-09-27', now), 'today');
 assert.equal(deadlineState('2026-09-30', now), 'soon');
+assert.equal(deadlineState('2026-09-30', new Date('2026-09-30T23:59:59')), 'today');
+assert.equal(deadlineState('2026-09-30', new Date('2026-10-01T00:00:00')), 'passed');
+assert.equal(deadlineState(undefined, now), 'none');
+const expired={...rows[1],id:'expired',applicationDeadline:'2026-09-20'};
+assert.deepEqual(filterOpportunities([expired],{},now),[]);
+assert.deepEqual(filterOpportunities([expired],{activity:'expired',stage:'APPLIED',priority:'MEDIUM',q:'BCG',deadline:'passed'},now),[expired]);
+assert.deepEqual(filterOpportunities([expired,...rows],{activity:''},now),[expired,...rows]);
+assert.deepEqual(filterOpportunities([expired],{activity:'archived'},now),[]);
 assert.equal(opportunityStage(rows[1]), 'APPLIED');
 assert.deepEqual(filterOpportunities(rows,{q:'',stage:'',priority:'',activity:'active',deadline:''},now).map(x=>x.id), ['target','applied']);
 assert.deepEqual(filterOpportunities(rows,{q:'',stage:'APPLIED',priority:'',activity:'',deadline:''},now).map(x=>x.id), ['applied']);

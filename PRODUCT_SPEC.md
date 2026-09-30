@@ -32,6 +32,8 @@ Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Ca
 
 ## UX principles
 
+Opportunity cards and Today actions open the same dedicated opportunity page at `#/opportunities/:id`. The page displays owned networking, application/document, interview, and task context. External links use the application's existing `applicationPortalUrl`, then the opportunity's existing `jobUrl`, then the firm's optional `careersUrl`, then `website`. Only valid HTTP(S) links are offered. Quick Add preserves `jobUrl` and `rawPostingText`; no job-site scraping is performed. The detail integration suite is `npm run test:opportunity-detail` and uses an isolated temporary SQLite database.
+
 Professional, calm, and efficient. Prefer useful empty states, clear forms, and actionable dashboards over decorative analytics. Preserve the existing dashboard visual language.
 
 ## Data and security

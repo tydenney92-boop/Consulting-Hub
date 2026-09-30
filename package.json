@@ -18,7 +18,8 @@
     "test:opportunity-delete": "rm -f /private/tmp/consulting-opportunity-delete-test.db; DATABASE_URL=file:/private/tmp/consulting-opportunity-delete-test.db npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script | sqlite3 /private/tmp/consulting-opportunity-delete-test.db; DATABASE_URL=file:/private/tmp/consulting-opportunity-delete-test.db npx prisma generate --schema prisma/schema.prisma; DATABASE_URL=file:/private/tmp/consulting-opportunity-delete-test.db npm run build --workspace server && DATABASE_URL=file:/private/tmp/consulting-opportunity-delete-test.db tsx server/src/opportunity-delete-check.ts",
     "test:today-navigation": "tsx client/src/today-actions-check.ts",
     "test:opportunity-workspace": "tsx client/src/opportunity-workspace-check.ts",
-    "test:quick-add": "tsx server/src/quick-add-check.ts"
+    "test:quick-add": "tsx server/src/quick-add-check.ts",
+    "test:opportunity-detail": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-detail-check.ts"
   },
   "workspaces": ["client", "server"],
   "devDependencies": { "concurrently": "^9.1.2", "prisma": "^6.7.0", "tsx": "^4.19.3", "typescript": "^5.7.2" },

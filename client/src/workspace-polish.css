@@ -1,0 +1,108 @@
+/* Shared workspace rhythm, surfaces, and accessible controls. */
+:root {
+  --surface: #fff;
+  --canvas: #f7f8fa;
+  --ink: #18212b;
+  --muted: #586777;
+  --border: #dfe5eb;
+  --navy: #111923;
+  --lime: #e3ff58;
+  --card-radius: 12px;
+  --card-padding: 24px;
+  --card-gap: 24px;
+  --section-gap: 32px;
+}
+.app { height: 100dvh; min-height: 0; }
+.app > main { display:flex; flex-direction:column; height:100dvh; min-width:0; }
+.app .topbar { flex:none; }
+.app .content { flex:1; min-height:0; width:100%; margin:0 auto; overflow-y:auto; padding-bottom:32px; scrollbar-gutter:stable; }
+.panel { padding:var(--card-padding); border:1px solid var(--border); border-radius:var(--card-radius); box-shadow:0 1px 2px #18212b03; }
+.panel h2 { font-size:17px; line-height:1.4; letter-spacing:-.3px; margin:0 0 16px; }
+.panel h3 { font-size:15px; line-height:1.5; }
+.panel-head { gap:16px; margin-bottom:20px; }
+.panel-head h2 { margin-bottom:6px; }
+.panel-head p, .empty-copy { color:var(--muted); font-size:14px; line-height:1.6; }
+.detail-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:var(--card-gap); margin:var(--section-gap) 0; align-items:start; }
+.detail-layout > *, .opportunity-heading > div { min-width:0; }
+.record-fields, .detail-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin:0; }
+.record-fields > div, .detail-fields > div { min-width:0; display:flex; flex-direction:column; gap:8px; }
+.record-fields dt, .detail-fields > div > span { display:block; font-size:13px; font-weight:500; color:var(--muted); line-height:1.4; text-transform:none; }
+.record-fields dd, .detail-fields > div > strong { display:block; margin:0; font-size:15px; font-weight:600; line-height:1.55; color:var(--ink); overflow-wrap:anywhere; }
+.detail-form { display:grid; gap:20px; }
+.detail-form label { display:grid; gap:8px; font-size:14px; line-height:1.5; color:var(--muted); }
+.detail-form input, .detail-form textarea { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:12px; font:inherit; color:var(--ink); background:var(--surface); }
+.page-head { gap:24px; align-items:flex-start; margin-bottom:var(--section-gap); }
+.page-head h1 { font-size:clamp(26px,3vw,34px); line-height:1.25; overflow-wrap:anywhere; letter-spacing:-.8px; }
+.page-head > div { min-width:0; }
+.sub { color:var(--muted); line-height:1.6; }
+.primary, .secondary { min-height:42px; padding:10px 16px; border-radius:8px; font-family:inherit; font-size:14px; font-weight:600; line-height:1.4; justify-content:center; }
+.secondary:hover { background:#f2f5f7; border-color:#b4c0cb; }
+.text-btn { font-family:inherit; font-size:14px; font-weight:600; line-height:1.5; padding:4px 0; }
+button:disabled { opacity:.6; cursor:wait; }
+.app :is(button,a,input,select,textarea,summary):focus-visible { outline:3px solid #426887; outline-offset:3px; }
+.badge, .status-badge { display:inline-flex; align-items:center; width:fit-content; border-radius:6px; padding:5px 9px; font-family:inherit; font-size:12px; font-weight:600; line-height:1.4; letter-spacing:0; white-space:normal; }
+.status-neutral, .badge.gray { background:#edf1f5; color:#435363; }
+.status-attention, .badge.orange { background:#fcf1dc; color:#77511b; }
+.status-success, .badge.green { background:#e8f3ec; color:#286146; }
+.status-overdue, .badge.rose { background:#fbeceb; color:#9d3937; }
+.badge.blue { background:#eaf1f9; color:#365e89; }
+.overdue { color:#9d3937; }
+.dashboard-grid, .chart-grid, .firm-detail, .opportunity-workspace { gap:var(--card-gap); }
+.app aside nav button { gap:12px; min-height:44px; position:relative; }
+.app aside nav svg { width:20px; height:20px; flex:0 0 20px; stroke-width:1.8; }
+.app aside nav button.active { background:#243240; color:#fff; box-shadow:inset 3px 0 var(--lime); }
+.app aside :is(button,a):focus-visible { outline-color:var(--lime); }
+/* A dedicated bottom row keeps quick add visible without covering records. */
+.app .quick { position:static; flex:none; display:flex; justify-content:flex-end; gap:8px; margin:0; padding:12px 32px max(12px,env(safe-area-inset-bottom)); border:0; border-top:1px solid var(--border); border-radius:0; background:var(--surface); box-shadow:none; }
+.app .quick button { color:#34495c; background:#f2f5f7; border:1px solid transparent; border-radius:8px; min-height:42px; padding:10px 14px; font:600 13px/1.4 Manrope,Arial,sans-serif; gap:8px; }
+.app .quick button:hover { background:#e8eef3; border-color:#cbd6df; }
+.app .quick svg { width:18px; height:18px; flex:none; }
+/* Opportunity page: clear snapshot first, supporting recruiting context below. */
+.opportunity-back { font-size:13px; color:var(--muted); }
+.opportunity-hero { margin:20px 0 var(--section-gap); }
+.opportunity-heading { gap:24px; }
+.opportunity-heading .eyebrow { color:#3b5064; font-family:inherit; font-size:15px; font-weight:600; line-height:1.5; letter-spacing:0; }
+.opportunity-heading h1 { font-size:clamp(27px,3vw,36px); line-height:1.25; font-weight:750; letter-spacing:-.8px; margin:8px 0 12px; max-width:900px; }
+.opportunity-heading .sub { font-size:15px; }
+.record-fields.opportunity-facts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:28px 0; padding:24px 0; border-block:1px solid var(--border); gap:24px; }
+.field-value-group { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.opportunity-primary-actions { gap:12px; }
+.opportunity-primary-actions a { min-height:44px; }
+.opportunity-primary-actions > span { font-size:14px; color:var(--muted); }
+.opportunity-source { color:var(--muted); line-height:1.5; }
+.opportunity-page .opportunity-next { padding-top:20px; margin-top:24px; font-size:14px; line-height:1.6; color:#3b5064; }
+.opportunity-sections { gap:var(--card-gap); align-items:start; }
+.record-fields.context-summary { grid-template-columns:1fr; gap:16px; margin-bottom:8px; }
+.context-summary > div { flex-direction:row; align-items:baseline; justify-content:space-between; gap:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.context-summary dd { text-align:right; font-size:14px; font-weight:500; }
+.opportunity-related p, .opportunity-contact-select { color:var(--muted); }
+.opportunity-documents dt { color:var(--muted); font-size:13px; }
+.opportunity-documents dd { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.opportunity-edit { padding-top:24px; border-top:1px solid var(--border); }
+.opportunity-edit > .primary { justify-self:start; }
+.application-status-row { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px; }
+.opportunity-management { margin-top:var(--section-gap); padding:24px 0 0; border-top:1px solid var(--border); align-items:center; justify-content:space-between; gap:24px; }
+.opportunity-danger { display:flex; flex-direction:column; gap:6px; border-left:1px solid var(--border); padding-left:24px; }
+.opportunity-danger > span { font-size:12px; color:var(--muted); }
+.text-btn.danger { color:#a13c38; }
+.opportunity-prose { color:#364656; }
+@media(max-width:1100px) { .record-fields.opportunity-facts {grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media(max-width:750px) {
+  .detail-layout,.opportunity-sections {grid-template-columns:1fr}
+  .app .quick {padding:10px 16px max(10px,env(safe-area-inset-bottom));justify-content:center;gap:8px}
+  .app .quick button {flex:1;justify-content:center;padding:8px;font-size:12px}
+  .opportunity-page .panel {padding:var(--card-padding)}
+  .opportunity-primary-actions {align-items:stretch}
+}
+@media(max-width:600px) {
+  .record-fields,.record-fields.opportunity-facts,.detail-fields {grid-template-columns:1fr;gap:20px}
+  .app .content {padding:24px 16px 32px;scrollbar-gutter:auto}
+  .app .quick {gap:4px;padding-inline:8px}
+  .app .quick button {flex-direction:column;gap:5px;min-width:0;font-size:11px;padding:8px 4px}
+  .context-summary > div {flex-direction:column;gap:8px}
+  .context-summary dd {text-align:left}
+  .opportunity-danger {border-left:0;border-top:1px solid var(--border);padding:20px 0 0;width:100%}
+  .opportunity-management {align-items:flex-start}
+  .opportunity-primary-actions .primary,.opportunity-primary-actions .secondary {width:100%}
+  .page-head {flex-wrap:wrap}
+}

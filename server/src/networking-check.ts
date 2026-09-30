@@ -43,6 +43,30 @@ async function main(){
   assert.equal((await request(`/contacts/${c.id}`,a.cookie).then(r=>r.json())).nextFollowUpDate,null);
   await request(`/tasks/${reminders[0].id}`,a.cookie,'PATCH',{completed:false});
   assert.equal((await request(`/contacts/${c.id}`,a.cookie).then(r=>r.json())).nextFollowUpDate.slice(0,10),next);
+  const editable=await request('/contacts',a.cookie,'POST',{name:'Morgan Edit QA'},201).then(r=>r.json());
+  const oldest=await request(`/contacts/${editable.id}/interactions`,a.cookie,'POST',{type:'EMAIL',date:localDay(-12),notes:'Oldest'},201).then(r=>r.json());
+  const middle=await request(`/contacts/${editable.id}/interactions`,a.cookie,'POST',{type:'PHONE_CALL',date:localDay(-8),notes:'Original middle notes'},201).then(r=>r.json());
+  const newest=await request(`/contacts/${editable.id}/interactions`,a.cookie,'POST',{type:'TEXT',date:localDay(-4),notes:'Newest'},201).then(r=>r.json());
+  let edited=await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{notes:'Updated middle notes',type:'COFFEE_CHAT'}).then(r=>r.json());
+  assert.equal(edited.notes,'Updated middle notes');assert.equal(edited.type,'COFFEE_CHAT');assert.equal(edited.date.slice(0,10),localDay(-8));
+  edited=await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{date:localDay(-2)}).then(r=>r.json());
+  let editableProfile=await request(`/contacts/${editable.id}`,a.cookie).then(r=>r.json());
+  assert.equal(editableProfile.lastContactDate.slice(0,10),localDay(-2));assert.equal(editableProfile.interactions[0].id,middle.id);
+  await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{date:localDay(-10)});
+  editableProfile=await request(`/contacts/${editable.id}`,a.cookie).then(r=>r.json());
+  assert.equal(editableProfile.lastContactDate.slice(0,10),localDay(-4));assert.equal(editableProfile.interactions[0].id,newest.id);
+  await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{followUpDate:localDay(3)});
+  let editReminders=await prisma.task.findMany({where:{userId:a.user.id,contactId:editable.id,status:{not:'COMPLETED'},taskType:'FOLLOW_UP'}});
+  assert.equal(editReminders.length,1);const editReminderId=editReminders[0].id;assert.equal(editReminders[0].dueDate!.toISOString().slice(0,10),localDay(3));
+  await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{followUpDate:localDay(4)});
+  editReminders=await prisma.task.findMany({where:{userId:a.user.id,contactId:editable.id,status:{not:'COMPLETED'},taskType:'FOLLOW_UP'}});
+  assert.equal(editReminders.length,1);assert.equal(editReminders[0].id,editReminderId);assert.equal(editReminders[0].dueDate!.toISOString().slice(0,10),localDay(4));
+  await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{followUpDate:''});
+  editReminders=await prisma.task.findMany({where:{userId:a.user.id,contactId:editable.id,status:{not:'COMPLETED'},taskType:'FOLLOW_UP'}});
+  assert.equal(editReminders.length,0);assert.equal((await request(`/contacts/${editable.id}`,a.cookie).then(r=>r.json())).nextFollowUpDate,null);
+  await request(`/interactions/${middle.id}`,b.cookie,'PATCH',{notes:'Foreign edit attempt'},404);
+  await request(`/interactions/${middle.id}`,a.cookie,'PATCH',{type:'INVALID'},400);
+  assert.equal((await prisma.interaction.findUnique({where:{id:oldest.id}}))?.notes,'Oldest');
   await request(`/contacts/${c.id}/interactions`,a.cookie,'POST',{type:'INVALID',date:today},400);
   await request(`/contacts/${c.id}/interactions`,a.cookie,'POST',{type:'EMAIL',date:'invalid'},400);
   await request(`/contacts/${c.id}/interactions`,b.cookie,'POST',{type:'EMAIL',userId:a.user.id},404);
@@ -56,7 +80,7 @@ async function main(){
   await request(`/contacts/${c.id}`,a.cookie,'PATCH',{name:'Sarah QA Chen',notes:'Updated while keeping advanced data.'});
   contact=await request(`/contacts/${c.id}`,a.cookie).then(r=>r.json());assert.equal(contact.email,c.email);assert.equal(contact.officeId,office.id);
   assert.equal(errors,'');
-  console.log('✓ Name-only/full contacts, optional interaction notes, chronological history, follow-up reuse/completion/reopening, dashboard suppression and nested ownership passed.');
+  console.log('✓ Contacts, interaction creation/editing, chronological Last Contacted recalculation, follow-up task synchronization, dashboard suppression, and ownership passed.');
   if(process.env.KEEP_NETWORK_QA==='true'){console.log('Local QA: http://127.0.0.1:4346 · network-a@example.test / Local-network-QA-2026!');await new Promise(()=>{})}
  }finally{if(server.exitCode===null&&server.signalCode===null){const exited=once(server,'exit');server.kill('SIGTERM');await exited}await prisma.$disconnect()}
 }

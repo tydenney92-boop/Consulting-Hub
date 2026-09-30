@@ -9,6 +9,7 @@
 .network-dates dt{font-size:13px;color:#647382;margin-bottom:6px}
 .network-dates dd{margin:0;font-weight:600}
 .network-profile{margin:20px 0 24px}
+.profile-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .network-note,.network-history p{white-space:pre-wrap}
 .network-history{list-style:none;margin:0;padding:0}
 .network-history li{padding:18px 0;border-bottom:1px solid #e3e8ec}
@@ -19,6 +20,23 @@
 .network-history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .network-history-head h3{min-width:0}
 .network-history-head .text-btn{flex:0 0 auto;font-size:13px}
+.planned-list{list-style:none;margin:0;padding:0}
+.planned-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;padding:18px 0;border-bottom:1px solid #e3e8ec}
+.planned-list li:last-child{border-bottom:0}
+.planned-list h3{font-size:16px;line-height:1.4;margin:0 0 6px}
+.planned-list p{margin:5px 0;white-space:pre-wrap}
+.planned-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.calendar-state{display:inline-flex;margin-top:8px;padding:4px 8px;border-radius:999px;background:#eef3f0;color:#44584f;font-size:12px;font-weight:700}
+.calendar-state.error,.calendar-state.connection_required{background:#fff1e8;color:#8b4b28}
+.sync-warning{display:block;margin-top:8px;color:#8b4b28;line-height:1.45}
+.calendar-cleanup{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px;padding:14px;border:1px solid #edcfba;border-radius:9px;background:#fff8f3}
+.calendar-cleanup p{margin:4px 0 0;color:#7c523a;font-size:13px}
+.next-meeting{padding:9px 11px;border-left:3px solid #b8d638;background:#f7f9ee;color:#405149;font-size:13px}
+.calendar-option{display:flex!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:flex-start;gap:10px!important;padding:12px;border:1px solid #dfe5e1;border-radius:9px;background:#f8faf8}
+.calendar-option input{width:auto!important;margin-top:3px}
+.calendar-option span{display:grid;gap:3px}
+.calendar-option.disabled{color:#687786;background:#f6f7f8}
+.timezone-note{margin:-4px 0 12px;color:#687786;font-size:13px}
 .network-page summary,.network-dialog summary{cursor:pointer;color:#40596a;padding:12px 0}
 .network-dialog{box-sizing:border-box;width:min(560px,calc(100% - 24px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid #dfe4e9;border-radius:12px;padding:24px;color:#26333e;background:#fff}
 .network-dialog::backdrop{background:#11192366}
@@ -31,5 +49,5 @@
 .network-page .opportunity-toolbar input{max-width:350px}
 .network-page a,.network-dialog a{color:#365d7c}
 .network-page button:focus-visible,.network-page a:focus-visible,.network-dialog :focus-visible{outline:3px solid #8eacbf;outline-offset:3px}
-@media(max-width:750px){.network-cards{grid-template-columns:1fr}.network-profile .panel-head,.network-page .page-head{align-items:flex-start;flex-direction:column;gap:16px}.network-dialog{padding:20px}.network-fields{grid-template-columns:1fr}.network-page .modal-actions{gap:12px;flex-wrap:wrap}}
+@media(max-width:750px){.network-cards{grid-template-columns:1fr}.network-profile .panel-head,.network-page .page-head{align-items:flex-start;flex-direction:column;gap:16px}.network-dialog{padding:20px}.network-fields{grid-template-columns:1fr}.network-page .modal-actions{gap:12px;flex-wrap:wrap}.planned-list li{grid-template-columns:1fr}.planned-actions{justify-content:flex-start}.calendar-cleanup{align-items:flex-start;flex-direction:column}}
 @media(max-width:480px){.network-history-head{gap:10px}.network-dialog{padding:18px}.network-dialog .modal-actions button{flex:1 1 auto}}

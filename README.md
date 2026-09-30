@@ -23,6 +23,7 @@ npm run dev              # React and Express together
 npm run build            # production typecheck/build
 ALLOW_DEMO_SEED=true npm run db:seed  # reset to the realistic demo data (development only)
 npm run test:workflows   # verify core seed fixtures
+npm run test:calendar    # verify planned networking, Calendar sync, and ownership
 npm start                # serve the production build (Railway command)
 ```
 
@@ -32,11 +33,24 @@ Local development uses `prisma/schema.prisma` with SQLite. Railway production us
 
 Local document files are stored in `uploads/`. In Railway, attach the Consulting Hub service's persistent volume at `/data`; the production API stores private uploads at `/data/uploads` and serves them only through authenticated document-download endpoints. Keep `UPLOAD_DIR` unset in production unless it points inside that persistent volume. SQLite and local uploads remain development-only.
 
+### Google Calendar setup
+
+Google Calendar is optional and uses a server-side OAuth 2.0 web application. Consulting Hub requests only `https://www.googleapis.com/auth/calendar.events.owned`, creates or updates events on the user's primary calendar, and never imports calendar data.
+
+1. In Google Cloud, enable the Google Calendar API and configure the OAuth consent screen.
+2. Create an OAuth client with application type **Web application**.
+3. Add `http://localhost:4000/api/google-calendar/callback` as a local authorized redirect URI.
+4. Add `https://consulting-hub-production-603a.up.railway.app/api/google-calendar/callback` as the production authorized redirect URI. It must exactly match `GOOGLE_REDIRECT_URI`.
+5. Set these server-only variables locally and in the Railway web service: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GOOGLE_TOKEN_ENCRYPTION_KEY`, and `APP_BASE_URL`. Generate the encryption key with `openssl rand -base64 32`. Set `APP_BASE_URL` to the public origin without a trailing slash.
+
+Do not expose the client secret, encryption key, access tokens, or refresh tokens to Vite/client variables. Railway needs no Calendar-specific build or migration command; the existing `prisma migrate deploy --schema prisma/schema.postgres.prisma` pre-deploy workflow applies the additive schema safely. OAuth must be configured before the first live connection test.
+
 ## API highlights
 
 - `GET/POST /api/opportunities`, `PATCH/DELETE /api/opportunities/:id`
 - `GET/POST /api/applications`, `PATCH /api/applications/:id/stage`
-- `GET/POST /api/contacts`, `POST /api/interactions`
+- `GET/POST /api/contacts`, `POST /api/interactions`, owned planned-interaction create/edit/complete/cancel/retry routes
+- `GET /api/google-calendar/status`, OAuth connect/callback, preference, and disconnect routes
 - `GET/POST/PATCH /api/tasks`
 - `GET/POST /api/documents`, `GET/PATCH/DELETE /api/documents/:id`, `POST /api/documents/:id/default`, `GET /api/documents/:id/download`
 - `GET /api/dashboard`, `/api/timeline`, `/api/analytics`, `/api/search`

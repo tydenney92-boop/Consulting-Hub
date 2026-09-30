@@ -10,7 +10,7 @@ Each account owns its recruiting data. Core workflows are: target a firm, manage
 
 ## Core entities
 
-User, Company (firm), Office, Contact, Interaction, Task, Opportunity, Application, Interview, and Document. Every private record is user-scoped at the database and API layers. Offices are user-owned target locations associated with firms.
+User, Company (firm), Office, Contact, Interaction, PlannedInteraction, Task, Opportunity, Application, Interview, and Document. Every private record is user-scoped at the database and API layers. Offices are user-owned target locations associated with firms.
 
 ## Current foundation
 
@@ -18,7 +18,7 @@ Accounts use password hashing and server-side sessions persisted in HTTP-only co
 
 ## Planned modules
 
-Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Case Prep; Behavioral Story Bank; Documents; Recruiting Profile; later calendar, email, and job-import integrations.
+Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Case Prep; Behavioral Story Bank; Documents; Recruiting Profile; later email and job-import integrations.
 
 ## Milestones
 
@@ -33,6 +33,8 @@ Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Ca
 ## UX principles
 
 Networking uses a shared lightweight contact/profile and interaction flow, including the global quick-add toolbar. Only a contact name is required; existing first/last-name storage is retained (a single name uses an empty last name). Firm and title are optional; advanced contact details stay available through progressive disclosure. Interaction entry requires a type and date in the UI, with today's date preselected; notes and follow-up are optional. Existing API clients may omit the date to use now. Summaries remain supported for legacy records, but are no longer required. Owned interactions can be edited from contact history without changing their contact or owner. Interaction date edits recalculate Last Contacted from the complete owned history. Follow-up edits reuse, update, or remove the pending generated networking task without creating duplicates; completing/reopening that task synchronizes the contact reminder. Contact history and tasks are ownership-scoped. `npm run test:networking` exercises these flows in an isolated temporary database.
+
+Planned networking interactions are separate from completed interaction history and follow-up tasks. A plan stores its contact, type, instant, IANA timezone, duration, notes, and location. Completing it creates exactly one logged interaction and can create or update the contact's single pending follow-up task. Google Calendar is an optional, one-way convenience integration: users connect it explicitly in Settings, event access is limited to calendars they own, and the default auto-add preference is off. Calendar failures never block Consulting Hub saves. OAuth credentials and encrypted tokens remain server-side, and deterministic event IDs make retries idempotent. Consulting Hub does not read or import calendar events.
 
 Opportunity cards and Today actions open the same dedicated opportunity page at `#/opportunities/:id`. The page displays owned networking, application/document, interview, and task context. External links use the application's existing `applicationPortalUrl`, then the opportunity's existing `jobUrl`, then the firm's optional `careersUrl`, then `website`. Only valid HTTP(S) links are offered. Quick Add preserves `jobUrl` and `rawPostingText`; no job-site scraping is performed. The detail integration suite is `npm run test:opportunity-detail` and uses an isolated temporary SQLite database.
 

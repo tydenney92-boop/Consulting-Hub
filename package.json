@@ -20,7 +20,8 @@
     "test:opportunity-workspace": "tsx client/src/opportunity-workspace-check.ts",
     "test:quick-add": "tsx server/src/quick-add-check.ts",
     "test:networking": "npm run db:generate && npm run build --workspace server && tsx server/src/networking-check.ts",
-    "test:opportunity-detail": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-detail-check.ts"
+    "test:opportunity-detail": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-detail-check.ts",
+    "test:calendar": "npm run db:generate && npm run build --workspace server && tsx server/src/calendar-check.ts"
   },
   "workspaces": ["client", "server"],
   "devDependencies": { "concurrently": "^9.1.2", "prisma": "^6.7.0", "tsx": "^4.19.3", "typescript": "^5.7.2" },

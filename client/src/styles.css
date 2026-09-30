@@ -33,3 +33,12 @@
 .opportunity-edit {margin-top:24px}
 .opportunity-edit textarea {width:100%;padding:12px;border:1px solid #d9dfe3;border-radius:8px;font:inherit}
 @media(max-width:750px){.opportunity-sections{grid-template-columns:1fr}.opportunity-heading{flex-direction:column;gap:8px}.opportunity-facts{gap:18px 28px}.opportunity-primary-actions{align-items:stretch;flex-direction:column}.opportunity-primary-actions a,.opportunity-primary-actions button{width:100%;white-space:normal}.opportunity-page .panel{padding:20px}.opportunity-page .detail-actions{flex-wrap:wrap}}
+.calendar-settings{margin-top:22px}
+.calendar-settings .panel-head p{max-width:520px;margin:5px 0 0;color:#687786;line-height:1.55}
+.calendar-settings h2{margin:0}
+.calendar-preference{display:flex!important;grid-template-columns:auto minmax(0,1fr)!important;align-items:flex-start;gap:10px!important;padding:13px;border:1px solid #dfe5e1;border-radius:8px;background:#f8faf8}
+.calendar-preference input{width:auto!important;margin-top:3px}
+.calendar-preference span{display:grid;gap:3px}
+.calendar-preference small{color:#687786;font-weight:400}
+.calendar-connect{display:inline-flex;text-decoration:none;margin-top:6px}
+.calendar-disconnect{justify-self:start}

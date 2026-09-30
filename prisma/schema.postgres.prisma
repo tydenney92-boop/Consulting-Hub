@@ -24,6 +24,9 @@ model User {
  documents Document[]
  applications Application[]
  interactions Interaction[]
+ plannedInteractions PlannedInteraction[]
+ googleCalendarConnection GoogleCalendarConnection?
+ googleOAuthStates GoogleOAuthState[]
  interviews Interview[]
  activities Activity[]
  createdAt DateTime @default(now())
@@ -169,6 +172,7 @@ model Contact {
  nextFollowUpDate DateTime?
  relationshipStrength String @default("New")
  interactions Interaction[]
+ plannedInteractions PlannedInteraction[]
  referralApplications Application[] @relation("ReferralApplications")
  recruiterApplications Application[] @relation("RecruiterApplications")
  interviews Interview[] @relation("InterviewContact")
@@ -193,7 +197,53 @@ model Interaction {
  followUpDate DateTime?
  followUpTaskId String?
  createdAt DateTime @default(now())
+ plannedSource PlannedInteraction?
  @@index([contactId,date])
+}
+model PlannedInteraction {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ contactId String
+ contact Contact @relation(fields:[contactId],references:[id],onDelete:Cascade)
+ type String
+ scheduledAt DateTime
+ timezone String @default("America/Denver")
+ durationMinutes Int @default(30)
+ notes String?
+ location String?
+ status String @default("SCHEDULED")
+ addToCalendar Boolean @default(false)
+ calendarEventId String?
+ calendarSyncStatus String @default("NOT_REQUESTED")
+ calendarSyncError String?
+ completedInteractionId String? @unique
+ completedInteraction Interaction? @relation(fields:[completedInteractionId],references:[id],onDelete:SetNull)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([userId,status,scheduledAt])
+ @@index([contactId,status,scheduledAt])
+}
+model GoogleCalendarConnection {
+ id String @id @default(cuid())
+ userId String @unique
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ email String?
+ accessTokenEncrypted String?
+ refreshTokenEncrypted String
+ accessTokenExpiresAt DateTime?
+ autoAddPlannedInteractions Boolean @default(false)
+ connectedAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+}
+model GoogleOAuthState {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ stateHash String @unique
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ @@index([userId,expiresAt])
 }
 model Interview {
  id String @id @default(cuid())

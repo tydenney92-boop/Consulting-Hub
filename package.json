@@ -19,6 +19,7 @@
     "test:today-navigation": "tsx client/src/today-actions-check.ts",
     "test:opportunity-workspace": "tsx client/src/opportunity-workspace-check.ts",
     "test:quick-add": "tsx server/src/quick-add-check.ts",
+    "test:networking": "npm run db:generate && npm run build --workspace server && tsx server/src/networking-check.ts",
     "test:opportunity-detail": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-detail-check.ts"
   },
   "workspaces": ["client", "server"],

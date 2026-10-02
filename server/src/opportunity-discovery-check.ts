@@ -6,5 +6,5 @@ assert.equal(normalizeKey(a.company,a.roleTitle,a.location),normalizeKey(b.compa
 const results=deduplicateListings([a,b]);assert.equal(results.length,1);assert.deepEqual(results[0].sourceUrls.sort(),['https://a','https://b']);
 assert.equal(listingMatches(a,{keywords:['strategy intern'],locations:['Dallas'],employmentType:'ALL'}),true);
 assert.equal(listingMatches(a,{keywords:['economic consulting intern']}),false);
-const unavailable=await discover({sources:['linkedin']});assert.equal(unavailable.outcomes[0].error?.includes('official public search integration'),true);
+const unavailable=await discover({sources:['linkedin']});assert.equal(unavailable.outcomes[0].error?.includes('replaced by OpenAI'),true);
 console.log('✓ Opportunity discovery normalization, deduplication, and filtering verified.');

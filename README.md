@@ -49,7 +49,7 @@ Do not expose the client secret, encryption key, access tokens, or refresh token
 
 **Search Opportunities** opens a review-first public-listing search. Results are normalized, deduplicated by company/title/location (while retaining every source URL), compared to the signed-in user's existing tracker, and added only after explicit selection. Added records default to `TARGET` and `MEDIUM` priority. Search runs retain their configuration, timestamp, and source failures.
 
-The built-in compliant adapters use documented public APIs only: configured public Greenhouse job boards and the USAJOBS API. Set `DISCOVERY_GREENHOUSE_BOARDS` to a comma-separated list of approved public Greenhouse board tokens. For USAJOBS, set server-only `USAJOBS_API_KEY` and `USAJOBS_EMAIL`. Results are cached briefly, retried with a small backoff, and source failures are shown in the review screen. LinkedIn, Indeed, Handshake, and university boards are intentionally displayed as unavailable until an official/public integration is configured; Consulting Hub never bypasses login, CAPTCHA, robots rules, rate limits, or site terms, and never scrapes those sites.
+Discovery uses the OpenAI Responses API web-search tool. Set server-only `OPENAI_API_KEY` in the app environment; `OPENAI_DISCOVERY_MODEL` is optional and defaults to `gpt-5.5`. Results are cached briefly, retried with a small backoff, and source failures are shown in the review screen. The search prompt permits only direct public listing pages: it never bypasses logins, CAPTCHAs, paywalls, robots rules, rate limits, or site terms, and never uses private APIs or credentialed browsing.
 
 ## API highlights
 

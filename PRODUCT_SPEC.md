@@ -16,6 +16,8 @@ User, Company (firm), Office, Contact, Interaction, PlannedInteraction, Task, Op
 
 Accounts use password hashing and server-side sessions persisted in HTTP-only cookies. API routes derive the authenticated user server-side, never from a client-supplied user ID. New users complete a short recruiting profile before entering the workspace, and profile data persists across sessions. The dashboard and current recruiting-resource APIs scope queries and mutations to the authenticated account.
 
+Unauthenticated visitors first see a public, read-only product overview at the root route. Its detailed workspace preview uses static fictional firms, contacts, roles, and activity only; it does not create a demo account, query protected recruiting endpoints, or expose persisted user data. Login and registration remain available at `#/login` and `#/register`.
+
 ## Planned modules
 
 Dashboard; Firms; Networking; Opportunities; Applications; Tasks; Interviews; Case Prep; Behavioral Story Bank; Documents; Recruiting Profile; later email and job-import integrations.

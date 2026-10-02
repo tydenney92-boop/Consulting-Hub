@@ -29,9 +29,39 @@ model User {
  googleOAuthStates GoogleOAuthState[]
  interviews Interview[]
  activities Activity[]
+ searchRuns OpportunitySearchRun[]
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  sessions Session[]
+}
+model OpportunitySearchRun {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ configuration String
+ sourceFailures String?
+ createdAt DateTime @default(now())
+ results OpportunitySearchResult[]
+ @@index([userId,createdAt])
+}
+model OpportunitySearchResult {
+ id String @id @default(cuid())
+ searchRunId String
+ searchRun OpportunitySearchRun @relation(fields:[searchRunId],references:[id],onDelete:Cascade)
+ company String
+ roleTitle String
+ location String
+ employmentType String?
+ internshipSeason String?
+ postingDate DateTime?
+ deadline DateTime?
+ source String
+ sourceUrls String
+ descriptionSnippet String?
+ discoveredAt DateTime @default(now())
+ matchStatus String @default("NEW")
+ existingOpportunityId String?
+ @@index([searchRunId,matchStatus])
 }
 model Session {
  id String @id @default(cuid())

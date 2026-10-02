@@ -45,6 +45,12 @@ Google Calendar is optional and uses a server-side OAuth 2.0 web application. Co
 
 Do not expose the client secret, encryption key, access tokens, or refresh tokens to Vite/client variables. Railway needs no Calendar-specific build or migration command; the existing `prisma migrate deploy --schema prisma/schema.postgres.prisma` pre-deploy workflow applies the additive schema safely. OAuth must be configured before the first live connection test.
 
+### Opportunity discovery
+
+**Search Opportunities** opens a review-first public-listing search. Results are normalized, deduplicated by company/title/location (while retaining every source URL), compared to the signed-in user's existing tracker, and added only after explicit selection. Added records default to `TARGET` and `MEDIUM` priority. Search runs retain their configuration, timestamp, and source failures.
+
+The built-in compliant adapters use documented public APIs only: configured public Greenhouse job boards and the USAJOBS API. Set `DISCOVERY_GREENHOUSE_BOARDS` to a comma-separated list of approved public Greenhouse board tokens. For USAJOBS, set server-only `USAJOBS_API_KEY` and `USAJOBS_EMAIL`. Results are cached briefly, retried with a small backoff, and source failures are shown in the review screen. LinkedIn, Indeed, Handshake, and university boards are intentionally displayed as unavailable until an official/public integration is configured; Consulting Hub never bypasses login, CAPTCHA, robots rules, rate limits, or site terms, and never scrapes those sites.
+
 ## API highlights
 
 - `GET/POST /api/opportunities`, `PATCH/DELETE /api/opportunities/:id`

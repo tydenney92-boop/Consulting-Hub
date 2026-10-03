@@ -45,6 +45,11 @@ async function main() {
     await request(`/opportunities/${op.id}/details`,a.cookie,'PATCH',{applicationPortalUrl:'https://example.org/apply'});
     const interview=await request('/interviews',a.cookie,'POST',{applicationId:application.id,scheduledAt:'2026-10-10T10:00:00-06:00',timezone:'America/Denver',interviewRound:'FIRST_ROUND',interviewType:'VIRTUAL',preparationNotes:'Practice profitability cases.'},201).then(r=>r.json());
     const task=await request('/tasks',a.cookie,'POST',{title:'Prepare for synthetic interview',interviewId:interview.id,opportunityId:op.id,dueDate:'2026-10-09'},201).then(r=>r.json());
+    const updatedTask=await request(`/tasks/${task.id}`,a.cookie,'PATCH',{title:'Complete synthetic case prep',description:'Practice a profitability case and review notes.',dueDate:'2026-10-08',priority:'HIGH',taskType:'PREP'},200).then(r=>r.json());
+    assert.equal(updatedTask.title,'Complete synthetic case prep');
+    assert.equal(updatedTask.description,'Practice a profitability case and review notes.');
+    assert.equal(updatedTask.priority,'HIGH');
+    assert.equal(updatedTask.taskType,'PREP');
     await request(`/contacts/${contact.id}/interactions`,a.cookie,'POST',{type:'EMAIL',summary:'Discussed Dallas recruiting.'},201);
     // Inject foreign-owned children to ensure detail reads scope each relationship,
     // even if inconsistent associations were ever introduced outside the API.

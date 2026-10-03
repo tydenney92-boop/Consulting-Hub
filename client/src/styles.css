@@ -42,3 +42,5 @@
 .calendar-preference small{color:#687786;font-weight:400}
 .calendar-connect{display:inline-flex;text-decoration:none;margin-top:6px}
 .calendar-disconnect{justify-self:start}
+.overlay .modal{box-sizing:border-box;max-height:calc(100dvh - 30px);overflow:auto}
+.opportunity-card{cursor:default}.opportunity-card-actions .text-btn{cursor:pointer}

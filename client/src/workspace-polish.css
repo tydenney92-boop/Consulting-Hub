@@ -36,6 +36,7 @@
 .page-head > div { min-width:0; }
 .sub { color:var(--muted); line-height:1.6; }
 .primary, .secondary { min-height:42px; padding:10px 16px; border-radius:8px; font-family:inherit; font-size:14px; font-weight:600; line-height:1.4; justify-content:center; }
+.text-btn { min-height:32px; display:inline-flex; align-items:center; }
 .secondary:hover { background:#f2f5f7; border-color:#b4c0cb; }
 .text-btn { font-family:inherit; font-size:14px; font-weight:600; line-height:1.5; padding:4px 0; }
 button:disabled { opacity:.6; cursor:wait; }
@@ -105,4 +106,5 @@ button:disabled { opacity:.6; cursor:wait; }
   .opportunity-management {align-items:flex-start}
   .opportunity-primary-actions .primary,.opportunity-primary-actions .secondary {width:100%}
   .page-head {flex-wrap:wrap}
+  .page-head > .primary,.page-head > .secondary {width:100%}
 }

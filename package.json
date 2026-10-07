@@ -23,6 +23,7 @@
     "test:quick-add": "tsx server/src/quick-add-check.ts",
     "test:networking": "npm run db:generate && npm run build --workspace server && tsx server/src/networking-check.ts",
     "test:opportunity-detail": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-detail-check.ts",
+    "test:opportunity-import": "npm run db:generate && npm run build --workspace server && tsx server/src/opportunity-import-check.ts",
     "test:calendar": "npm run db:generate && npm run build --workspace server && tsx server/src/calendar-check.ts"
   },
   "workspaces": ["client", "server"],

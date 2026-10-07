@@ -3,7 +3,22 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "tsx watch src/index.ts", "build": "tsc" },
-  "dependencies": { "express": "latest", "cors": "latest", "multer": "latest", "zod": "latest" },
-  "devDependencies": { "@types/express": "latest", "@types/cors": "latest", "@types/multer": "latest", "@types/node": "latest", "typescript": "^5.7.2" }
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "cors": "latest",
+    "exceljs": "^4.4.0",
+    "express": "latest",
+    "multer": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/multer": "latest",
+    "@types/node": "latest",
+    "typescript": "^5.7.2"
+  }
 }

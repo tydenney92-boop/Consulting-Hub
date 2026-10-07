@@ -30,6 +30,7 @@ model User {
  interviews Interview[]
  activities Activity[]
  searchRuns OpportunitySearchRun[]
+ opportunityImports OpportunityImport[]
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  sessions Session[]
@@ -126,6 +127,9 @@ model Opportunity {
  practiceArea String
  location String
  jobUrl String?
+ requisitionId String?
+ eligibility String?
+ deadlineType String @default("UNKNOWN")
  source String
  dateFound DateTime @default(now())
  applicationOpenDate DateTime?
@@ -148,7 +152,49 @@ model Opportunity {
  createdAt DateTime @default(now())
  updatedAt DateTime @updatedAt
  @@index([userId,companyId,applicationDeadline])
+ @@index([userId,companyId,requisitionId])
  @@index([practiceArea,priority])
+}
+model OpportunityImport {
+ id String @id @default(cuid())
+ userId String
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ fileName String
+ fileType String
+ fileFingerprint String
+ sheetName String
+ headerRow Int
+ headersJson String
+ mappingJson String
+ workbookJson String
+ status String @default("PREVIEW")
+ revision Int @default(1)
+ expiresAt DateTime
+ committedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ rows OpportunityImportRow[]
+ @@index([userId,status,expiresAt])
+}
+model OpportunityImportRow {
+ id String @id @default(cuid())
+ importId String
+ import OpportunityImport @relation(fields:[importId],references:[id],onDelete:Cascade)
+ rowNumber Int
+ rowFingerprint String
+ sourceJson String
+ mappedJson String
+ outcome String
+ defaultDecision String
+ decision String
+ matchedOpportunityId String?
+ error String?
+ committedOpportunityId String?
+ committedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@unique([importId,rowNumber])
+ @@index([importId,decision])
 }
 model Application {
  id String @id @default(cuid())

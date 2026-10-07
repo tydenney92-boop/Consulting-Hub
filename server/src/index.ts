@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { PrismaClient } from '@prisma/client';
 import { validatedOpportunityUrl } from './opportunity-url.js';
 import { normalizedName, parsePosting } from './quick-add.js';
+import { canonicalUrl, detectHeaders, importFields, mapRows, normalized as normalizedImportValue, parseWorkbook, rowFingerprint, workbookFingerprint, type ImportMapping, type MappedImportRow, type WorkbookSnapshot } from './opportunity-import.js';
 import { CalendarAuthorizationError, GoogleCalendarApiError, calendarEventBody, decryptToken, deterministicEventId, encryptToken, exchangeAuthorizationCode, googleAuthorizationUrl, googleCalendarConfigured, googleCalendarRequest, refreshGoogleToken, revokeGoogleToken } from './google-calendar.js';
 const prisma = new PrismaClient(), app = express(), port = Number(process.env.PORT || 4000), uploadDir = path.resolve(process.env.UPLOAD_DIR || (process.env.NODE_ENV === 'production' ? '/data/uploads' : 'uploads')), scrypt = promisify(scryptCallback);
 const documentTypes = ['RESUME', 'COVER_LETTER', 'TRANSCRIPT', 'HEADSHOT', 'WRITING_SAMPLE', 'REFERENCE', 'OTHER'] as const;
@@ -28,6 +29,11 @@ const uploadDocuments = (req: Request, res: Response, next: NextFunction) => upl
     return res.status(400).json({ error: message });
 } if (error)
     return next(error); next(); });
+const opportunityImportUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, done) => done(null, /\.(csv|xlsx)$/i.test(file.originalname))
+}).single('file');
 app.set('trust proxy', 1);
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || true, credentials: true }));
 app.use(express.json());
@@ -111,6 +117,127 @@ catch (e) {
     next(e);
 } });
 app.use('/api', auth);
+
+const importPreviewInclude = { rows: { orderBy: { rowNumber: 'asc' as const } } };
+const importJson = (value: string) => { try { return JSON.parse(value); } catch { return null; } };
+const appendUniqueNotes = (current: string | null | undefined, additions: string[]) => {
+    const lines = String(current || '').split('\n').map(x => x.trim()).filter(Boolean), seen = new Set(lines.map(normalizedImportValue));
+    for (const addition of additions.map(x => x.trim()).filter(Boolean)) if (!seen.has(normalizedImportValue(addition))) { lines.push(addition); seen.add(normalizedImportValue(addition)); }
+    return lines.join('\n') || null;
+};
+const roleSimilarity = (left: string, right: string) => { const a = new Set(normalizedImportValue(left).split(' ').filter(Boolean)), b = new Set(normalizedImportValue(right).split(' ').filter(Boolean)); if (!a.size || !b.size) return 0; const common = [...a].filter(x => b.has(x)).length; return (2 * common) / (a.size + b.size); };
+const analyzeImportRows = async (userId: string, rows: MappedImportRow[]) => {
+    const existing = await prisma.opportunity.findMany({ where: { userId }, include: { company: true } });
+    const seenRows = new Set<string>();
+    return rows.map(row => {
+        let outcome = 'CREATE', defaultDecision = 'CREATE', error: string | null = null, match: any = null;
+        if (!row.company || !row.roleTitle) { outcome = 'ERROR'; defaultDecision = 'SKIP'; error = 'Company and role title are required.'; }
+        if (!error && row.jobUrl && !canonicalUrl(row.jobUrl)) { outcome = 'ERROR'; defaultDecision = 'SKIP'; error = 'The job URL must use HTTP or HTTPS.'; }
+        if (!error) {
+            const company = normalizedImportValue(row.company), role = normalizedImportValue(row.roleTitle), location = normalizedImportValue(row.location), season = normalizedImportValue(row.recruitingSeason);
+            match = existing.find(x => normalizedImportValue(x.company.name) === company && row.requisitionId && normalizedImportValue(x.requisitionId) === normalizedImportValue(row.requisitionId))
+                || existing.find(x => normalizedImportValue(x.company.name) === company && row.jobUrl && canonicalUrl(x.jobUrl) === canonicalUrl(row.jobUrl))
+                || existing.find(x => normalizedImportValue(x.company.name) === company && normalizedImportValue(x.roleTitle) === role && normalizedImportValue(x.location) === location && normalizedImportValue(x.recruitingSeason) === season);
+            if (match) { outcome = 'EXACT_MATCH'; defaultDecision = 'SKIP'; }
+            else {
+                match = existing.find(x => normalizedImportValue(x.company.name) === company && roleSimilarity(x.roleTitle, row.roleTitle) >= .72 && (!location || !x.location || normalizedImportValue(x.location) === location));
+                if (match) { outcome = 'POSSIBLE_MATCH'; defaultDecision = 'SKIP'; }
+            }
+        }
+        const key = `${normalizedImportValue(row.company)}|${row.requisitionId ? 'req:' + normalizedImportValue(row.requisitionId) : row.jobUrl ? 'url:' + canonicalUrl(row.jobUrl) : [row.roleTitle, row.location, row.recruitingSeason].map(normalizedImportValue).join('|')}`;
+        if (!error && seenRows.has(key)) { outcome = 'DUPLICATE_ROW'; defaultDecision = 'SKIP'; error = 'Duplicate spreadsheet row. Import its first occurrence instead.'; }
+        seenRows.add(key);
+        if (row.jobUrl && canonicalUrl(row.jobUrl)) row.jobUrl = canonicalUrl(row.jobUrl);
+        return { row, outcome, defaultDecision, error, match };
+    });
+};
+const presentImport = (item: any) => { const snapshot = importJson(item.workbookJson) as WorkbookSnapshot | null; return ({
+    id: item.id, fileName: item.fileName, fileType: item.fileType, sheetName: item.sheetName, headerRow: item.headerRow, headers: importJson(item.headersJson) || [], mapping: importJson(item.mappingJson) || {}, status: item.status, revision: item.revision, expiresAt: item.expiresAt,
+    sheets: (snapshot?.sheets || []).map((sheet: any) => { const detected = detectHeaders(sheet); return { name: sheet.name, rowCount: sheet.rows?.length || 0, headers: detected.headers, suggestedMapping: detected.mapping }; }),
+    rows: (item.rows || []).map((entry: any) => ({ id: entry.id, rowNumber: entry.rowNumber, data: importJson(entry.mappedJson), outcome: entry.outcome, defaultDecision: entry.defaultDecision, decision: entry.decision, matchedOpportunityId: entry.matchedOpportunityId, error: entry.error, committedOpportunityId: entry.committedOpportunityId }))
+}); };
+const importRowRecords = async (userId: string, snapshot: WorkbookSnapshot, sheetName: string, mapping: ImportMapping, headerRow: number) => (await analyzeImportRows(userId, mapRows(snapshot, sheetName, mapping, headerRow))).map(({ row, outcome, defaultDecision, error, match }) => ({
+    rowNumber: row.rowNumber, rowFingerprint: rowFingerprint(row), sourceJson: JSON.stringify(row), mappedJson: JSON.stringify({ ...row, matchedUpdatedAt: match?.updatedAt?.toISOString() || null }), outcome, defaultDecision, decision: defaultDecision, matchedOpportunityId: match?.id || null, error
+}));
+
+app.get('/api/opportunity-imports/template.csv', (_req: Authed, res) => {
+    const template = ['Company,Role title,Location,Application deadline,Job URL,Requisition ID,Eligibility,Compensation,Employment type,Recruiting season,Priority,Notes', 'Example Strategy Group,Summer Strategy Intern,Salt Lake City,2027-01-15,https://example.com/careers/123,REQ-123,Undergraduate students,$25/hour,INTERNSHIP,Summer 2027,HIGH,Example row — replace or delete'];
+    res.type('text/csv').attachment('consulting-hub-opportunity-import-template.csv').send(template.join('\r\n'));
+});
+app.post('/api/opportunity-imports', (req: Authed, res, next) => opportunityImportUpload(req, res, error => {
+    if (error instanceof multer.MulterError) return res.status(400).json({ error: error.code === 'LIMIT_FILE_SIZE' ? 'The spreadsheet must be 5 MB or smaller.' : 'Upload one CSV or XLSX file.' });
+    if (error) return next(error); next();
+}), async (req: Authed, res, next) => { try {
+    if (!req.file) return res.status(400).json({ error: 'Choose a CSV or XLSX file.' });
+    const userId = req.userId!, snapshot = await parseWorkbook(req.file.buffer, req.file.originalname), sheet = snapshot.sheets.find(x => x.name === snapshot.preferredSheet)!;
+    const detected = detectHeaders(sheet), records = await importRowRecords(userId, snapshot, sheet.name, detected.mapping, detected.headerIndex);
+    await prisma.opportunityImport.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } });
+    const item = await prisma.opportunityImport.create({ data: { userId, fileName: path.basename(req.file.originalname), fileType: path.extname(req.file.originalname).slice(1).toLowerCase(), fileFingerprint: workbookFingerprint(req.file.buffer), sheetName: sheet.name, headerRow: detected.headerIndex, headersJson: JSON.stringify(detected.headers), mappingJson: JSON.stringify(detected.mapping), workbookJson: JSON.stringify(snapshot), expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), rows: { create: records } }, include: importPreviewInclude });
+    res.status(201).json(presentImport(item));
+} catch (e: any) { res.status(400).json({ error: e?.message || 'Unable to read this spreadsheet.' }); } });
+app.get('/api/opportunity-imports/:id', async (req: Authed, res, next) => { try {
+    const item = await prisma.opportunityImport.findFirst({ where: { id: String(req.params.id), userId: req.userId }, include: importPreviewInclude });
+    if (!item) return res.status(404).json({ error: 'Import preview not found.' });
+    if (item.expiresAt < new Date() && item.status === 'PREVIEW') return res.status(410).json({ error: 'This import preview expired. Upload the spreadsheet again.' });
+    res.json(presentImport(item));
+} catch (e) { next(e); } });
+app.patch('/api/opportunity-imports/:id', async (req: Authed, res, next) => { try {
+    const item = await prisma.opportunityImport.findFirst({ where: { id: String(req.params.id), userId: req.userId }, include: importPreviewInclude });
+    if (!item) return res.status(404).json({ error: 'Import preview not found.' });
+    if (item.status !== 'PREVIEW' || item.expiresAt < new Date()) return res.status(409).json({ error: 'This preview can no longer be changed.' });
+    if (Number(req.body?.revision) !== item.revision) return res.status(409).json({ error: 'This preview changed in another tab. Reload it before continuing.' });
+    const snapshot = importJson(item.workbookJson) as WorkbookSnapshot, sheetName = String(req.body?.sheetName || item.sheetName), sheet = snapshot.sheets.find(x => x.name === sheetName);
+    if (['hub inventory', 'location applications'].includes(normalizedImportValue(sheetName))) return res.status(400).json({ error: 'Inventory and location sheets are supporting data only.' });
+    if (!sheet) return res.status(400).json({ error: 'Choose a sheet from this workbook.' });
+    const detected = detectHeaders(sheet), headers = detected.headers, requested = (req.body?.mapping || {}) as ImportMapping, mapping: ImportMapping = {};
+    for (const field of importFields) if (requested[field] && headers.includes(String(requested[field]))) mapping[field] = String(requested[field]);
+    if (!mapping.company || !mapping.roleTitle) return res.status(400).json({ error: 'Map both Company and Role title before reviewing rows.' });
+    const records = await importRowRecords(req.userId!, snapshot, sheetName, mapping, detected.headerIndex);
+    const updated = await prisma.$transaction(async tx => { await tx.opportunityImportRow.deleteMany({ where: { importId: item.id } }); return tx.opportunityImport.update({ where: { id: item.id }, data: { sheetName, headerRow: detected.headerIndex, headersJson: JSON.stringify(headers), mappingJson: JSON.stringify(mapping), revision: { increment: 1 }, rows: { create: records } }, include: importPreviewInclude }); });
+    res.json(presentImport(updated));
+} catch (e) { next(e); } });
+app.delete('/api/opportunity-imports/:id', async (req: Authed, res, next) => { try {
+    const item = await prisma.opportunityImport.findFirst({ where: { id: String(req.params.id), userId: req.userId } });
+    if (!item) return res.status(404).json({ error: 'Import preview not found.' });
+    await prisma.opportunityImport.delete({ where: { id: item.id } }); res.status(204).end();
+} catch (e) { next(e); } });
+app.post('/api/opportunity-imports/:id/commit', async (req: Authed, res, next) => { try {
+    const userId = req.userId!, item = await prisma.opportunityImport.findFirst({ where: { id: String(req.params.id), userId }, include: importPreviewInclude });
+    if (!item) return res.status(404).json({ error: 'Import preview not found.' });
+    if (item.status === 'COMMITTED') return res.json({ created: item.rows.filter(x => x.committedOpportunityId && x.decision === 'CREATE').length, updated: item.rows.filter(x => x.committedOpportunityId && x.decision === 'UPDATE').length, skipped: item.rows.filter(x => !x.committedOpportunityId).length, alreadyCommitted: true });
+    if (item.status !== 'PREVIEW' || item.expiresAt < new Date()) return res.status(409).json({ error: 'This preview expired or was canceled. Upload the spreadsheet again.' });
+    if (Number(req.body?.revision) !== item.revision) return res.status(409).json({ error: 'This preview is stale. Reload it before importing.' });
+    const decisions = new Map<string, string>((Array.isArray(req.body?.rows) ? req.body.rows : []).map((x: any): [string, string] => [String(x.id), String(x.decision)])), allowed = new Set(['CREATE', 'UPDATE', 'SKIP']);
+    const summary = await prisma.$transaction(async tx => {
+        const claimed = await tx.opportunityImport.updateMany({ where: { id: item.id, userId, revision: item.revision, status: 'PREVIEW' }, data: { status: 'COMMITTING' } });
+        if (claimed.count !== 1) throw Object.assign(new Error('This preview changed or is already being imported. Reload it before continuing.'), { status: 409 });
+        let created = 0, updated = 0, skipped = 0;
+        for (const entry of item.rows) {
+            const decision = decisions.get(entry.id) || 'SKIP'; if (!allowed.has(decision)) throw Object.assign(new Error('Choose create, update, or skip for every row.'), { status: 400 });
+            const row = importJson(entry.mappedJson) as MappedImportRow & { matchedUpdatedAt?: string | null };
+            if (entry.error || decision === 'SKIP') { skipped++; await tx.opportunityImportRow.update({ where: { id: entry.id }, data: { decision: 'SKIP' } }); continue; }
+            let opportunityId: string;
+            const additions = [row.notes, row.supplemental?.length ? `Additional location applications: ${row.supplemental.join('; ')}` : ''].filter(Boolean);
+            if (decision === 'UPDATE') {
+                if (!entry.matchedOpportunityId) throw Object.assign(new Error(`Row ${entry.rowNumber} has no matched opportunity to update.`), { status: 409 });
+                const existing = await tx.opportunity.findFirst({ where: { id: entry.matchedOpportunityId, userId } });
+                if (!existing || (row.matchedUpdatedAt && existing.updatedAt.toISOString() !== row.matchedUpdatedAt)) throw Object.assign(new Error(`Row ${entry.rowNumber} is stale because its matched opportunity changed. Create a new preview.`), { status: 409 });
+                const changed = await tx.opportunity.update({ where: { id: existing.id }, data: { jobUrl: row.jobUrl || existing.jobUrl, requisitionId: row.requisitionId || existing.requisitionId, eligibility: row.eligibility || existing.eligibility, deadlineType: row.deadlineType, applicationDeadline: row.deadlineDate ? new Date(`${row.deadlineDate}T12:00:00.000Z`) : existing.applicationDeadline, compensation: row.compensation || existing.compensation, employmentType: row.employmentType || existing.employmentType, recruitingSeason: row.recruitingSeason || existing.recruitingSeason, priority: ['HIGH', 'MEDIUM', 'LOW'].includes(row.priority.toUpperCase()) ? row.priority.toUpperCase() : existing.priority, notes: appendUniqueNotes(existing.notes, additions) } });
+                opportunityId = changed.id; updated++;
+            } else {
+                const newDuplicate = await tx.opportunity.findFirst({ where: { userId, OR: [ ...(row.requisitionId ? [{ requisitionId: row.requisitionId, company: { name: row.company } }] : []), ...(row.jobUrl ? [{ jobUrl: row.jobUrl }] : []), { roleTitle: row.roleTitle, location: row.location || 'Unspecified', recruitingSeason: row.recruitingSeason || null, company: { name: row.company } } ] } });
+                if (newDuplicate) throw Object.assign(new Error(`Row ${entry.rowNumber} now matches an existing opportunity. Create a new preview before importing.`), { status: 409 });
+                const ownedCompanies = await tx.company.findMany({ where: { userId } }); let company = ownedCompanies.find(x => normalizedImportValue(x.name) === normalizedImportValue(row.company)) || null; if (!company) company = await tx.company.create({ data: { userId, name: row.company } });
+                const createdItem = await tx.opportunity.create({ data: { userId, companyId: company.id, roleTitle: row.roleTitle, practiceArea: 'General Consulting', location: row.location || 'Unspecified', jobUrl: row.jobUrl || null, requisitionId: row.requisitionId || null, eligibility: row.eligibility || null, deadlineType: row.deadlineType, applicationDeadline: row.deadlineDate ? new Date(`${row.deadlineDate}T12:00:00.000Z`) : null, compensation: row.compensation || null, employmentType: row.employmentType || null, recruitingSeason: row.recruitingSeason || null, priority: ['HIGH', 'MEDIUM', 'LOW'].includes(row.priority.toUpperCase()) ? row.priority.toUpperCase() : 'MEDIUM', source: `Spreadsheet import: ${item.fileName}`, status: 'TARGET', notes: appendUniqueNotes(null, additions) } });
+                opportunityId = createdItem.id; created++;
+            }
+            await tx.opportunityImportRow.update({ where: { id: entry.id }, data: { decision, committedOpportunityId: opportunityId, committedAt: new Date() } });
+        }
+        await tx.opportunityImport.update({ where: { id: item.id }, data: { status: 'COMMITTED', committedAt: new Date() } });
+        return { created, updated, skipped };
+    }, { timeout: 30000 });
+    await activity(userId, `Imported ${summary.created} opportunities from ${item.fileName}`); res.json(summary);
+} catch (e: any) { res.status(e?.status || 500).json({ error: e?.message || 'Unable to import these opportunities.' }); } });
 const plannedInteractionTypes = ['COFFEE_CHAT', 'PHONE_CALL', 'VIDEO_CALL', 'LUNCH', 'OTHER'];
 const validTimeZone = (value: string) => { try {
     new Intl.DateTimeFormat('en-US', { timeZone: value }).format();

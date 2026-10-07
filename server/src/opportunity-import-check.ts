@@ -5,6 +5,8 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
+import { readFile } from 'node:fs/promises';
 import { parseDeadline, canonicalUrl } from './opportunity-import.js';
 
 const folder = mkdtempSync(join(tmpdir(), 'opportunity-import-')), database = join(folder, 'test.db'), port = 4387, base = `http://127.0.0.1:${port}`;
@@ -43,6 +45,29 @@ try {
   const xlsx = Buffer.from(await workbook.xlsx.writeBuffer()); const bookPreview = await upload(a, xlsx, 'multi-sheet.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); assert.equal(bookPreview.sheetName, 'Open opportunities'); assert.equal(bookPreview.rows.length, 1); assert.deepEqual(bookPreview.rows[0].data.supplemental, ['Chicago — https://example.com/chicago']);
   await upload(a, 'not a spreadsheet', 'legacy.xls', 'application/vnd.ms-excel', 400);
   await upload(a, 'not a zip archive', 'malformed.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 400);
+  const compatibility = new ExcelJS.Workbook(), compatibilitySheet = compatibility.addWorksheet('Open opportunities');
+  compatibilitySheet.getRow(2).getCell(1).value = 'Summer 2027 recruiting';
+  compatibilitySheet.getRow(12).values = ['Company', 'Role', 'US locations', 'Graduation rule', 'Pay details', 'Application URL', 'My notes', 'Next step'];
+  compatibilitySheet.getRow(13).values = ['Namespace QA', 'Strategy Intern', 'Dallas; Boston', 'Graduation 2028', '$30/hour', 'https://example.com/prefixed', 'Preserve this note', 'Review eligibility'];
+  const prefixedZip = await JSZip.loadAsync(await compatibility.xlsx.writeBuffer());
+  for (const entry of Object.values(prefixedZip.files)) if (entry.name.endsWith('.xml')) {
+    let xml = await entry.async('string');
+    if (xml.includes('xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"')) {
+      xml = xml.replace('xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"', 'xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"').replace(/<(\/?)([A-Za-z_][\w.-]*)(?=[\s/>])/g, '<$1x:$2');
+      prefixedZip.file(entry.name, xml);
+    }
+  }
+  const prefixedPreview = await upload(a, await prefixedZip.generateAsync({ type: 'nodebuffer' }), 'prefixed.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  assert.equal(prefixedPreview.rows.length, 1); assert.equal(prefixedPreview.rows[0].rowNumber, 13);
+  assert.equal(prefixedPreview.rows[0].data.location, 'Dallas; Boston'); assert.equal(prefixedPreview.rows[0].data.eligibility, 'Graduation 2028'); assert.equal(prefixedPreview.rows[0].data.compensation, '$30/hour');
+  assert.match(prefixedPreview.rows[0].data.notes, /Next step: Review eligibility/);
+  if (process.env.IMPORT_TEST_WORKBOOK) {
+    const realPreview = await upload(a, await readFile(process.env.IMPORT_TEST_WORKBOOK), 'comparison.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    assert.equal(realPreview.sheetName, 'Open opportunities'); assert.equal(realPreview.headerRow, 11);
+    assert(realPreview.rows.length > 0); assert(realPreview.rows.every((row: any) => row.data.company && row.data.roleTitle));
+    assert(realPreview.rows[0].data.location); assert(realPreview.rows[0].data.notes);
+    console.log(`✓ Supplied comparison workbook: ${realPreview.rows.length} opportunity rows previewed through the authenticated upload endpoint.`);
+  }
   const duplicateRows = await upload(b, csv + '\n' + csv.split('\n')[1], 'duplicates.csv', 'text/csv');
   assert.equal(duplicateRows.rows[2].outcome, 'DUPLICATE_ROW');
   const onlySelected = await json(`/opportunity-imports/${duplicateRows.id}/commit`, b, 'POST', { revision: duplicateRows.revision, rows: [{ id: duplicateRows.rows[0].id, decision: 'CREATE' }] });

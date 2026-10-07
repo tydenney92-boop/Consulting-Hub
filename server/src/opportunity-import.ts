@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
 
@@ -11,16 +12,16 @@ export type WorkbookSnapshot = { sheets: SheetSnapshot[]; preferredSheet: string
 const aliases: Record<ImportField, string[]> = {
   company: ['company', 'firm', 'employer', 'organization', 'organisation'],
   roleTitle: ['role', 'role title', 'job title', 'position', 'opportunity', 'internship'],
-  location: ['location', 'office', 'city', 'target office'],
+  location: ['location', 'office', 'city', 'target office', 'us locations'],
   deadline: ['deadline', 'application deadline', 'apply by', 'due date', 'close date'],
-  jobUrl: ['url', 'job url', 'posting url', 'application url', 'apply link', 'job posting'],
+  jobUrl: ['direct application url', 'application url', 'official posting url', 'url', 'job url', 'posting url', 'apply link', 'job posting'],
   requisitionId: ['requisition id', 'req id', 'job id', 'posting id', 'requisition'],
-  eligibility: ['eligibility', 'eligible', 'requirements', 'class year'],
-  compensation: ['pay', 'compensation', 'salary', 'hourly rate'],
+  eligibility: ['eligibility', 'eligible', 'requirements', 'class year', 'graduation rule'],
+  compensation: ['pay', 'compensation', 'salary', 'hourly rate', 'pay details'],
   employmentType: ['employment type', 'job type', 'type'],
   recruitingSeason: ['season', 'recruiting season', 'internship season', 'term'],
   priority: ['priority'],
-  notes: ['notes', 'note', 'description', 'context']
+  notes: ['notes', 'note', 'description', 'context', 'my notes']
 };
 
 export const normalized = (value: unknown) => String(value ?? '').trim().toLowerCase().replace(/https?:\/\/(?:www\.)?/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -67,7 +68,26 @@ export async function parseWorkbook(buffer: Buffer, fileName: string): Promise<W
   if (!['xlsx', 'csv'].includes(extension || '')) throw new Error('Choose a CSV or XLSX file. Macro-enabled and legacy Excel files are not accepted.');
   const workbook = new ExcelJS.Workbook();
   if (extension === 'csv') await workbook.csv.read(Readable.from(buffer));
-  else await workbook.xlsx.load(buffer as any);
+  else {
+    const archive = await JSZip.loadAsync(buffer), entries = Object.values(archive.files).filter(entry => !entry.dir);
+    let total = 0;
+    if (entries.length > 500) throw new Error('This workbook contains too many internal files. Export a smaller workbook or CSV.');
+    for (const entry of entries) {
+      const size = (entry as any)._data?.uncompressedSize;
+      if (typeof size !== 'number' || size > 10 * 1024 * 1024 || (total += size) > 25 * 1024 * 1024) throw new Error('This workbook is too large when expanded. Export a smaller workbook or CSV.');
+      if (!entry.name.endsWith('.xml')) continue;
+      let xml = await entry.async('string');
+      // ExcelJS expects unprefixed spreadsheet element names. Preserve attributes,
+      // relationship IDs, and text while normalizing the standard main namespace.
+      const prefixes = [...xml.matchAll(/xmlns:([A-Za-z_][\w.-]*)\s*=\s*["']http:\/\/schemas\.openxmlformats\.org\/spreadsheetml\/2006\/main["']/g)].map(match => match[1]);
+      for (const prefix of new Set(prefixes)) {
+        const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        xml = xml.replace(new RegExp(`(<\\/?)(?:${escaped}):(?=[A-Za-z_])`, 'g'), '$1');
+      }
+      if (prefixes.length) archive.file(entry.name, xml);
+    }
+    await workbook.xlsx.load(await archive.generateAsync({ type: 'nodebuffer' }) as any, { ignoreNodes: ['tableParts'] });
+  }
   const sheets = workbook.worksheets.map(snapshotSheet).filter(sheet => sheet.rows.length);
   if (!sheets.length) throw new Error('The spreadsheet does not contain any readable rows.');
   const source = sheets.find(x => normalized(x.name) === 'open opportunities') || sheets.filter(x => !['hub inventory', 'location applications'].includes(normalized(x.name))).sort((a, b) => headerScore(b) - headerScore(a))[0];
@@ -95,7 +115,8 @@ export function detectHeaders(sheet: SheetSnapshot) {
   const headers = sheet.rows[headerIndex].map((value, index) => String(value || '').trim() || `Column ${index + 1}`);
   const mapping: ImportMapping = {};
   for (const field of importFields) {
-    const index = headers.findIndex(header => aliases[field].includes(normalized(header)));
+    const alias = aliases[field].find(alias => headers.some(header => normalized(header) === alias));
+    const index = headers.findIndex(header => normalized(header) === alias);
     if (index >= 0) mapping[field] = headers[index];
   }
   return { headerIndex, headers, mapping };
@@ -134,14 +155,17 @@ export function mapRows(snapshot: WorkbookSnapshot, sheetName: string, mapping: 
     for (const row of supplementRows) {
       const get = (field: ImportField) => String(row.values[found.mapping[field] || ''] ?? '').trim();
       const requisitionKey = normalized(get('requisitionId')), roleKey = `${normalized(get('company'))}|${normalized(get('roleTitle'))}`;
-      const context = [get('location'), canonicalUrl(get('jobUrl'))].filter(Boolean).join(' — ');
+      const urls = Object.entries(row.values).filter(([header]) => /\b(url|link)\b/.test(normalized(header))).map(([, value]) => canonicalUrl(value)).filter(Boolean);
+      const context = [get('location'), ...new Set(urls)].filter(Boolean).join(' — ');
       for (const key of [requisitionKey, roleKey].filter(Boolean)) if (context) supplements.set(key, [...new Set([...(supplements.get(key) || []), context])]);
     }
   }
   return rowsByHeaders(sheet, index, headers).map(row => {
     const value = (field: ImportField) => String(row.values[mapping[field] || ''] ?? '').trim(), deadline = parseDeadline(row.values[mapping.deadline || '']);
     const requisitionId = value('requisitionId'), roleKey = `${normalized(value('company'))}|${normalized(value('roleTitle'))}`;
-    return { ...Object.fromEntries(importFields.map(field => [field, value(field)])) as Record<ImportField, string>, rowNumber: row.rowNumber, ...deadline, jobUrl: value('jobUrl'), supplemental: supplements.get(normalized(requisitionId)) || supplements.get(roleKey) || [] };
+    const mappedHeaders = new Set(Object.values(mapping));
+    const context = Object.entries(row.values).filter(([header, cell]) => !mappedHeaders.has(header) && String(cell).trim()).map(([header, cell]) => `${header}: ${String(cell).trim()}`);
+    return { ...Object.fromEntries(importFields.map(field => [field, value(field)])) as Record<ImportField, string>, notes: [value('notes'), ...context].filter(Boolean).join('\n'), rowNumber: row.rowNumber, ...deadline, jobUrl: value('jobUrl'), supplemental: supplements.get(normalized(requisitionId)) || supplements.get(roleKey) || [] };
   });
 }
 

@@ -11,6 +11,7 @@
     "cors": "latest",
     "exceljs": "^4.4.0",
     "express": "latest",
+    "jszip": "^3.10.2",
     "multer": "latest",
     "zod": "latest"
   },

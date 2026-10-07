@@ -45,22 +45,20 @@ Google Calendar is optional and uses a server-side OAuth 2.0 web application. Co
 
 Do not expose the client secret, encryption key, access tokens, or refresh tokens to Vite/client variables. Railway needs no Calendar-specific build or migration command; the existing `prisma migrate deploy --schema prisma/schema.postgres.prisma` pre-deploy workflow applies the additive schema safely. OAuth must be configured before the first live connection test.
 
-### Opportunity discovery
+### Opportunity discovery (not available in this release)
 
-**Search Opportunities** opens a review-first public-listing search. Results are normalized, deduplicated by company/title/location (while retaining every source URL), compared to the signed-in user's existing tracker, and added only after explicit selection. Added records default to `TARGET` and `MEDIUM` priority. Search runs retain their configuration, timestamp, and source failures.
-
-Discovery uses the OpenAI Responses API web-search tool. Set server-only `OPENAI_API_KEY` in the app environment; `OPENAI_DISCOVERY_MODEL` is optional and defaults to `gpt-5.5`. Results are cached briefly, retried with a small backoff, and source failures are shown in the review screen. The search prompt permits only direct public listing pages: it never bypasses logins, CAPTCHAs, paywalls, robots rules, rate limits, or site terms, and never uses private APIs or credentialed browsing.
+The current release supports manual Quick Add (pasted text and public URLs). Automated opportunity discovery, OpenAI web search, result review/import, and caching are not implemented in the current client/API. Search-run schema and migration scaffolding exist, but should not be mistaken for a working feature. Do not configure or pay for an API integration on that basis.
 
 ## API highlights
 
 - `GET/POST /api/opportunities`, `PATCH/DELETE /api/opportunities/:id`
 - `GET/POST /api/applications`, `PATCH /api/applications/:id/stage`
-- `GET/POST /api/contacts`, `POST /api/interactions`, owned planned-interaction create/edit/complete/cancel/retry routes
+- `GET/POST /api/contacts`, `POST /api/contacts/:id/interactions`, owned planned-interaction create/edit/complete/cancel/retry routes
 - `GET /api/google-calendar/status`, OAuth connect/callback, preference, and disconnect routes
 - `GET/POST/PATCH /api/tasks`
 - `GET/POST /api/documents`, `GET/PATCH/DELETE /api/documents/:id`, `POST /api/documents/:id/default`, `GET /api/documents/:id/download`
 - `GET /api/dashboard`, `/api/timeline`, `/api/analytics`, `/api/search`
-- `GET /api/export/opportunities` and `/api/export/contacts`
+- `GET /api/export/opportunities`
 
 ## Notes
 

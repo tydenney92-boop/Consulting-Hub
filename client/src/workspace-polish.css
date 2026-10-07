@@ -108,3 +108,15 @@ button:disabled { opacity:.6; cursor:wait; }
   .page-head {flex-wrap:wrap}
   .page-head > .primary,.page-head > .secondary {width:100%}
 }
+.record-link { display:inline; white-space:normal; overflow-wrap:anywhere; }
+.today-queue,.today-queue-list,.today-action,.today-action-copy,.today-action-copy > div { min-width:0; max-width:100%; }
+.today-action { display:grid; width:100%; grid-template-columns:8px minmax(0,1fr) auto; }
+.today-action strong,.today-action p { overflow-wrap:anywhere; }
+.firm-office-form label { min-width:0; }
+@media(max-width:600px) {
+  .today-action { grid-template-columns:6px minmax(0,1fr); }
+  .today-action .urgency-label { grid-column:2; justify-self:start; }
+  .today-action-copy > div { flex-wrap:wrap; }
+  .task-item { min-width:0; flex-wrap:wrap; }
+  .task-item > div { min-width:0; overflow-wrap:anywhere; }
+}

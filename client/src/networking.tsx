@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {safeExternalUrl} from './opportunity-detail-model';
 import './networking.css';
+import {RecordLink,recordPath,useNavigation} from './navigation';
 
 const label=(s:string)=>s.toLowerCase().replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
 const name=(c:any)=>[c.firstName,c.lastName].filter(Boolean).join(' ');
@@ -76,8 +77,9 @@ function PlannedInteractionDialog({contact,planned,mode='plan',calendar,api,onCl
 }
 
 export function Networking({contacts,api,refresh,focusId,onBack}:any){
+  const {go}=useNavigation();
   const [selected,setSelected]=useState<any>(null),[query,setQuery]=useState(''),[stage,setStage]=useState(''),[dialog,setDialog]=useState<any>(null),[message,setMessage]=useState(''),[calendar,setCalendar]=useState<any>(null);
-  const load=async(id:string)=>{try{history.replaceState(null,'',`#/networking/${encodeURIComponent(id)}`);setSelected(await api(`/contacts/${id}`))}catch(e:any){setMessage(e.message)}};
+  const load=async(id:string)=>{try{setSelected(await api(`/contacts/${id}`))}catch(e:any){setMessage(e.message)}};
   useEffect(()=>{api('/google-calendar/status').then(setCalendar).catch(()=>setCalendar({connected:false}))},[]);
   useEffect(()=>{if(focusId)load(focusId)},[focusId,contacts]);
   const saved=async(id:string)=>{await refresh();await load(id);setMessage('Saved.')};
@@ -90,7 +92,7 @@ export function Networking({contacts,api,refresh,focusId,onBack}:any){
   return <div className="network-page">
     {message&&<p className="notice" role="status">{message}</p>}
     {selected?<>
-      <button className="text-btn" onClick={()=>{history.replaceState(null,'','#/networking');setSelected(null);onBack?.()}}>← All contacts</button>
+      <button className="text-btn" onClick={()=>{onBack?.()}}>← Back</button>
       <section className="panel network-profile"><div className="panel-head"><div><h1>{name(selected)}</h1><p>{[selected.title,selected.company?.name,selected.office?.city||selected.location].filter(Boolean).join(' · ')||'Networking contact'}</p></div><div className="profile-actions"><button className="primary" onClick={()=>plan(selected)}>+ Plan interaction</button><button className="secondary" onClick={()=>log(selected)}>Log past interaction</button></div></div>
         <ContactLinks contact={selected}/><dl className="network-dates"><div><dt>Last contacted</dt><dd>{day(selected.lastContactDate)}</dd></div><div><dt>Next follow-up</dt><dd>{day(selected.nextFollowUpDate)}</dd></div><div><dt>Networking stage</dt><dd>{label(selected.networkingStage)}</dd></div></dl>
         {selected.school&&<p>{selected.school}</p>}{selected.notes&&<p className="network-note">{selected.notes}</p>}
@@ -102,7 +104,7 @@ export function Networking({contacts,api,refresh,focusId,onBack}:any){
     </>:<>
       <div className="page-head"><div><h1>Networking</h1><p className="sub">Your relationships, conversations, and next follow-ups.</p></div><button className="primary" onClick={()=>setDialog({kind:'contact'})}>+ Add contact</button></div>
       <div className="opportunity-toolbar"><input aria-label="Search contacts" placeholder="Search people, firms, or schools" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="Networking stage filter" value={stage} onChange={e=>setStage(e.target.value)}><option value="">All stages</option>{stages.map(s=><option value={s} key={s}>{label(s)}</option>)}</select></div>
-      <div className="network-cards">{rows.map((c:any)=><article className="panel" key={c.id}><button className="text-btn network-name" onClick={()=>load(c.id)}>{name(c)}</button><p>{[c.title,c.company?.name].filter(Boolean).join(' · ')||'Networking contact'}</p><span className="status-badge">{label(c.networkingStage)}</span><dl className="network-dates"><div><dt>Last contacted</dt><dd>{day(c.lastContactDate)}</dd></div><div><dt>Next follow-up</dt><dd>{day(c.nextFollowUpDate)}</dd></div></dl>{c.plannedInteractions?.some((item:any)=>item.status==='SCHEDULED')&&<p className="next-meeting">Next conversation: {moment(c.plannedInteractions.find((item:any)=>item.status==='SCHEDULED').scheduledAt,c.plannedInteractions.find((item:any)=>item.status==='SCHEDULED').timezone)}</p>}<div className="modal-actions"><button className="primary" onClick={()=>plan(c)}>+ Plan interaction</button><button className="secondary" onClick={()=>log(c)}>Log past</button><button className="text-btn" onClick={()=>load(c.id)}>Profile →</button>{safeExternalUrl(c.linkedinUrl)&&<a href={safeExternalUrl(c.linkedinUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`LinkedIn profile for ${name(c)} (opens in a new tab)`}>LinkedIn ↗</a>}</div></article>)}</div>
+      <div className="network-cards">{rows.map((c:any)=><article className="panel" key={c.id}><button className="text-btn network-name" onClick={()=>go(recordPath('contact',c.id))}>{name(c)}</button><p>{[c.title,c.company?.name].filter(Boolean).join(' · ')||'Networking contact'}</p><span className="status-badge">{label(c.networkingStage)}</span><dl className="network-dates"><div><dt>Last contacted</dt><dd>{day(c.lastContactDate)}</dd></div><div><dt>Next follow-up</dt><dd>{day(c.nextFollowUpDate)}</dd></div></dl>{c.plannedInteractions?.some((item:any)=>item.status==='SCHEDULED')&&<p className="next-meeting">Next conversation: {moment(c.plannedInteractions.find((item:any)=>item.status==='SCHEDULED').scheduledAt,c.plannedInteractions.find((item:any)=>item.status==='SCHEDULED').timezone)}</p>}<div className="modal-actions"><button className="primary" onClick={()=>plan(c)}>+ Plan interaction</button><button className="secondary" onClick={()=>log(c)}>Log past</button><button className="text-btn" onClick={()=>load(c.id)}>Profile →</button>{safeExternalUrl(c.linkedinUrl)&&<a href={safeExternalUrl(c.linkedinUrl)!} target="_blank" rel="noopener noreferrer" aria-label={`LinkedIn profile for ${name(c)} (opens in a new tab)`}>LinkedIn ↗</a>}</div></article>)}</div>
       {!rows.length&&<p className="panel empty-copy">{contacts.length?'No contacts match these filters.':'Start with a name. You can add the details later.'}</p>}
     </>}
     {dialog&&(dialog.kind==='planned'?<PlannedInteractionDialog {...dialog} calendar={calendar} api={api} onClose={()=>setDialog(null)} onSaved={saved}/>:<NetworkingDialog {...dialog} api={api} onClose={()=>setDialog(null)} onSaved={saved}/>)}

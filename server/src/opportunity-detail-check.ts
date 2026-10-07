@@ -81,6 +81,10 @@ async function main() {
     for(const jobUrl of ['javascript:alert(1)','ftp://example.org/file','not a url','https://user:password@example.org'])await request(`/opportunities/${op.id}/details`,a.cookie,'PATCH',{jobUrl},400);
     await request(`/opportunities/${op.id}/details`,a.cookie,'PATCH',{jobUrl:'https://example.org/updated',userId:b.user.id,notes:'Updated notes'});
     assert.equal((await request(`/opportunities/${op.id}`,a.cookie).then(r=>r.json())).jobUrl,'https://example.org/updated');
+    await request(`/opportunities/${op.id}/details`,a.cookie,'PATCH',{roleTitle:'Strategy & Operations Intern',practiceArea:'Corporate Strategy',location:'Dallas, TX',employmentType:'INTERNSHIP',recruitingSeason:'Summer 2027',applicationDeadline:'2026-11-15',priority:'HIGH'});
+    const corrected=await request(`/opportunities/${op.id}`,a.cookie).then(r=>r.json());
+    assert.equal(corrected.roleTitle,'Strategy & Operations Intern');assert.equal(corrected.practiceArea,'Corporate Strategy');assert.equal(corrected.employmentType,'INTERNSHIP');assert.equal(corrected.recruitingSeason,'Summer 2027');assert.equal(corrected.applicationDeadline.slice(0,10),'2026-11-15');
+    await request(`/opportunities/${op.id}/details`,a.cookie,'PATCH',{employmentType:'INVALID'},400);
     await request(`/opportunities/${op.id}/context`,b.cookie,'PATCH',{networkingContactId:contact.id},404);
     await request(`/opportunities/${op.id}/context`,a.cookie,'PATCH',{networkingContactId:null});
     await request(`/opportunities/${op.id}/context`,a.cookie,'PATCH',{networkingContactId:contact.id});

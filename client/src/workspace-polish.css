@@ -30,7 +30,7 @@
 .record-fields dd, .detail-fields > div > strong { display:block; margin:0; font-size:15px; font-weight:600; line-height:1.55; color:var(--ink); overflow-wrap:anywhere; }
 .detail-form { display:grid; gap:20px; }
 .detail-form label { display:grid; gap:8px; font-size:14px; line-height:1.5; color:var(--muted); }
-.detail-form input, .detail-form textarea { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:12px; font:inherit; color:var(--ink); background:var(--surface); }
+.detail-form input, .detail-form select, .detail-form textarea { width:100%; min-width:0; border:1px solid var(--border); border-radius:8px; padding:12px; font:inherit; color:var(--ink); background:var(--surface); }
 .page-head { gap:24px; align-items:flex-start; margin-bottom:var(--section-gap); }
 .page-head h1 { font-size:clamp(26px,3vw,34px); line-height:1.25; overflow-wrap:anywhere; letter-spacing:-.8px; }
 .page-head > div { min-width:0; }
@@ -79,7 +79,7 @@ button:disabled { opacity:.6; cursor:wait; }
 .opportunity-related p, .opportunity-contact-select { color:var(--muted); }
 .opportunity-documents dt { color:var(--muted); font-size:13px; }
 .opportunity-documents dd { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
-.opportunity-edit { padding-top:24px; border-top:1px solid var(--border); }
+.opportunity-edit { grid-template-columns:repeat(2,minmax(0,1fr)); padding-top:24px; border-top:1px solid var(--border); }
 .opportunity-edit > .primary { justify-self:start; }
 .application-status-row { display:flex; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:16px; }
 .opportunity-management { margin-top:var(--section-gap); padding:24px 0 0; border-top:1px solid var(--border); align-items:center; justify-content:space-between; gap:24px; }
@@ -97,6 +97,8 @@ button:disabled { opacity:.6; cursor:wait; }
 }
 @media(max-width:600px) {
   .record-fields,.record-fields.opportunity-facts,.detail-fields {grid-template-columns:1fr;gap:20px}
+  .opportunity-edit {grid-template-columns:1fr}
+  .opportunity-edit .span-all {grid-column:auto}
   .app .content {padding:24px 16px 32px;scrollbar-gutter:auto}
   .app .quick {gap:4px;padding-inline:8px}
   .app .quick button {flex-direction:column;gap:5px;min-width:0;font-size:11px;padding:8px 4px}

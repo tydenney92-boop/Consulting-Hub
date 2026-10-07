@@ -378,10 +378,30 @@ app.patch('/api/opportunities/:id/details', async (req: Authed, res, next) => {
         if (!item)
             return res.status(404).json({ error: 'Opportunity not found.' });
         const b = req.body || {}, jobUrl = validatedOpportunityUrl(b.jobUrl), applicationPortalUrl = validatedOpportunityUrl(b.applicationPortalUrl);
+        if (b.roleTitle !== undefined && !String(b.roleTitle).trim())
+            return res.status(400).json({ error: 'Role title is required.' });
+        if (b.priority !== undefined && !['HIGH', 'MEDIUM', 'LOW'].includes(String(b.priority)))
+            return res.status(400).json({ error: 'Choose a valid priority.' });
+        if (b.employmentType !== undefined && b.employmentType && !['INTERNSHIP', 'FULL_TIME', 'PART_TIME', 'CONTRACT', 'OTHER'].includes(String(b.employmentType)))
+            return res.status(400).json({ error: 'Choose a valid employment type.' });
+        const applicationDeadline = b.applicationDeadline === undefined ? undefined : b.applicationDeadline ? new Date(`${String(b.applicationDeadline).slice(0, 10)}T12:00:00.000Z`) : null;
+        if (applicationDeadline instanceof Date && Number.isNaN(applicationDeadline.getTime()))
+            return res.status(400).json({ error: 'Enter a valid application deadline.' });
         const updated = await prisma.$transaction(async (tx) => {
             if (applicationPortalUrl !== undefined)
                 await tx.application.updateMany({ where: { userId: req.userId, opportunityId: item.id }, data: { applicationPortalUrl } });
-            return tx.opportunity.update({ where: { id: item.id }, data: { jobUrl, notes: b.notes === undefined ? undefined : String(b.notes), source: b.source === undefined ? undefined : String(b.source) } });
+            return tx.opportunity.update({ where: { id: item.id }, data: {
+                jobUrl,
+                roleTitle: b.roleTitle === undefined ? undefined : String(b.roleTitle).trim(),
+                practiceArea: b.practiceArea === undefined ? undefined : String(b.practiceArea).trim() || 'General Consulting',
+                location: b.location === undefined ? undefined : String(b.location).trim() || 'Unspecified',
+                employmentType: b.employmentType === undefined ? undefined : b.employmentType || null,
+                recruitingSeason: b.recruitingSeason === undefined ? undefined : String(b.recruitingSeason).trim() || null,
+                applicationDeadline,
+                priority: b.priority === undefined ? undefined : String(b.priority),
+                notes: b.notes === undefined ? undefined : String(b.notes),
+                source: b.source === undefined ? undefined : String(b.source)
+            } });
         });
         res.json(updated);
     }
@@ -650,7 +670,7 @@ app.post('/api/opportunities', async (req: Authed, res, next) => { try {
     if (b.networkingContactId && (!contact || contact.companyId !== company.id))
         return res.status(400).json({ error: 'Choose a networking contact belonging to this firm.' });
     const status = opportunityStages.includes(String(b.status)) ? String(b.status) : 'TARGET';
-    const item = await prisma.opportunity.create({ data: { userId, companyId: company.id, officeId: office?.id ?? null, networkingContactId: contact?.id ?? null, roleTitle: String(b.roleTitle || 'Untitled opportunity'), practiceArea: b.practiceArea || null, location: b.location || office?.city || null, employmentType: b.employmentType || 'FULL_TIME', recruitingSeason: b.recruitingSeason || null, source: b.source || null, jobUrl: validatedOpportunityUrl(b.jobUrl), rawPostingText: b.rawPostingText || null, description: b.description || null, applicationDeadline: b.applicationDeadline ? new Date(b.applicationDeadline) : null, priority: b.priority || 'MEDIUM', status, referralStatus: b.referralStatus || 'NONE', transcriptRequired: !!b.transcriptRequired, assessmentRequired: !!b.assessmentRequired, notes: b.notes || null }, include: pipelineOpportunityInclude });
+    const item = await prisma.opportunity.create({ data: { userId, companyId: company.id, officeId: office?.id ?? null, networkingContactId: contact?.id ?? null, roleTitle: String(b.roleTitle || 'Untitled opportunity'), practiceArea: b.practiceArea || null, location: b.location || office?.city || null, employmentType: b.employmentType || null, recruitingSeason: b.recruitingSeason || null, source: b.source || null, jobUrl: validatedOpportunityUrl(b.jobUrl), rawPostingText: b.rawPostingText || null, description: b.description || null, applicationDeadline: b.applicationDeadline ? new Date(b.applicationDeadline) : null, priority: b.priority || 'MEDIUM', status, referralStatus: b.referralStatus || 'NONE', transcriptRequired: !!b.transcriptRequired, assessmentRequired: !!b.assessmentRequired, notes: b.notes || null }, include: pipelineOpportunityInclude });
     await activity(userId, `Added ${item.roleTitle} at ${item.company.name}`, 'opportunity', item.id);
     res.status(201).json(item);
 }

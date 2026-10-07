@@ -44,3 +44,5 @@
 .calendar-disconnect{justify-self:start}
 .overlay .modal{box-sizing:border-box;max-height:calc(100dvh - 30px);overflow:auto}
 .opportunity-card{cursor:default}.opportunity-card-actions .text-btn{cursor:pointer}
+.application-toolbar{margin-top:0}.app-card small{display:block;margin-top:5px;line-height:1.4}.app-card footer>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.app-card footer b{color:#647382;font-weight:600}
+@media(max-width:650px){.kanban{margin-right:0;flex-direction:column;overflow:visible}.kanban-col{width:100%;min-width:0;min-height:0}.kanban-col:not(:has(.app-card)){display:none}}

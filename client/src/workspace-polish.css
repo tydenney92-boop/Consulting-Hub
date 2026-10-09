@@ -138,6 +138,60 @@ button:disabled { opacity:.6; cursor:wait; }
 .today-action { display:grid; width:100%; grid-template-columns:8px minmax(0,1fr) auto; }
 .today-action strong,.today-action p { overflow-wrap:anywhere; }
 .firm-office-form label { min-width:0; }
+/* Consistent native controls across list filters, record forms and dialogs. */
+.app .content select,.modal select,.network-dialog select {
+  box-sizing:border-box;max-width:100%;min-width:0;min-height:44px;
+  border:1px solid var(--border);border-radius:8px;padding:10px 36px 10px 12px;
+  font-family:inherit;font-size:14px;font-weight:500;line-height:1.5;letter-spacing:0;
+  color:var(--ink);background-color:var(--surface);color-scheme:light;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23586777' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-size:16px;background-position:right 12px center;
+}
+.app .content select:disabled,.modal select:disabled,.network-dialog select:disabled {opacity:.65;cursor:not-allowed;background-color:#f2f4f6}
+.app .content .recruiting-stage-control select {min-height:46px}
+.app .content :is(.firm-create,.firm-office-form,.profile-form,.detail-form) label:not(.check-option):not(.calendar-preference),
+.modal label:not(.upload),.document-drop label,.document-actions label,.import-controls label,.import-map-grid label,.app .content > label {
+  display:grid;gap:8px;min-width:0;align-content:start;align-self:start;font-family:inherit;font-size:14px;font-weight:500;line-height:1.5;color:var(--muted);
+}
+.app .content > label {width:min(320px,100%);margin:20px 0}
+.app .content :is(.firm-create,.firm-office-form,.profile-form,.detail-form) :where(input:not([type=checkbox]):not([type=radio]),textarea),
+.overlay .modal :where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea) {
+  box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:44px;padding:11px 12px;
+  border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font:400 14px/1.5 Manrope,Arial,sans-serif;
+}
+.app .content :is(.firm-create,.firm-office-form,.profile-form,.detail-form) select {width:100%}
+.app .content :is(.firm-create,.firm-office-form,.profile-form,.detail-form) textarea,.modal textarea {min-height:104px;resize:vertical}
+.network-dialog input:not([type=checkbox]):not([type=radio]) {min-height:44px}
+.app .content input[readonly] {background:#f4f6f8;color:var(--muted)}
+.firm-create {grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:0 0 24px}
+.firm-create > h2 {grid-column:1/-1;margin:0}
+.firm-create > button {justify-self:start}
+.form-actions {grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding-top:4px}
+.firm-office-form {grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px;align-items:end}
+.firm-office-form > button {justify-self:start}
+.firm-card-meta {flex-wrap:wrap;gap:8px 16px;font:400 13px/1.5 Manrope,Arial,sans-serif;overflow-wrap:anywhere}
+.detail-actions {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.document-actions {gap:12px;align-items:center}
+.document-actions label {min-width:150px}
+.document-drop label {align-self:stretch}
+.profile-form {gap:20px;border-radius:12px;padding:24px;margin-bottom:24px}
+.opportunity-toolbar,.toolbar {gap:12px;margin-top:0;margin-bottom:20px;min-width:0}
+.opportunity-toolbar .search {max-width:100%;min-width:0;min-height:44px}
+.opportunity-toolbar .search input {font-family:inherit;font-size:14px}
+.timeline {display:grid;gap:20px;margin:24px 0;border-left:0;max-width:none}
+.network-dialog select {width:100%}
+@media(max-width:750px) {
+  .firm-create,.firm-office-form {grid-template-columns:minmax(0,1fr)}
+  .firm-create .span-all {grid-column:auto}
+  .document-actions label {width:100%;min-width:0}
+  .document-card {flex-direction:column}
+  .document-copy {width:100%}
+  .app .content select,.modal select,.network-dialog select {font-size:16px}
+  .app .content :is(.firm-create,.firm-office-form,.profile-form,.detail-form) :where(input:not([type=checkbox]):not([type=radio]),textarea),.overlay .modal :where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea),.network-dialog :is(input:not([type=checkbox]),textarea) {font-size:16px}
+  .toolbar > select {width:100%}
+  .profile-form {padding:20px}
+}
+@media(forced-colors:active) {.app .content select,.modal select,.network-dialog select {appearance:auto;background-image:none}}
 @media(max-width:600px) {
   .today-action { grid-template-columns:6px minmax(0,1fr); }
   .today-action .urgency-label { grid-column:2; justify-self:start; }

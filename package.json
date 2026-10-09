@@ -19,6 +19,7 @@
     "test:audit-regressions": "npm run db:generate && npm run build --workspace server && tsx client/src/audit-regression-check.ts && tsx server/src/audit-regression-check.ts",
     "test:today-navigation": "tsx client/src/today-actions-check.ts",
     "test:workspace-search": "tsx client/src/workspace-search-check.ts",
+    "test:ui-labels": "tsx client/src/ui-labels-check.ts",
     "test:opportunity-workspace": "tsx client/src/opportunity-workspace-check.ts",
     "test:application-workspace": "tsx client/src/application-workspace-check.ts",
     "test:quick-add": "tsx server/src/quick-add-check.ts",

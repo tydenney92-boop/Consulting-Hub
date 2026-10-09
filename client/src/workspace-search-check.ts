@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { searchWorkspace } from './workspace-search-model';
+import { recordPath } from './navigation';
+const data = {companies:[{id:'firm-1',name:'Summit Strategy'}],opportunities:[{id:'role-1',roleTitle:'Strategy Intern',company:{name:'Summit Strategy'},office:{city:'Dallas'}}],contacts:[{id:'contact-1',firstName:'Sarah',lastName:'Chen',company:{name:'Summit Strategy'}}],applications:[{id:'app-1',currentStage:'ASSESSMENT',opportunity:{roleTitle:'Strategy Intern',company:{name:'Summit Strategy'}}}]};
+assert.equal(searchWorkspace(data,'  ').length,0);
+assert.equal(searchWorkspace(data,'SUMMIT').length,4);
+assert.equal(searchWorkspace(data,'strategy Dallas')[0].id,'role-1');
+assert.equal(searchWorkspace(data,'Sarah Chen')[0].kind,'contact');
+assert.equal(searchWorkspace(data,'assessment')[0].id,'app-1');
+assert.equal(searchWorkspace(data,'another user').length,0);
+assert.equal(recordPath(searchWorkspace(data,'Dallas')[0].kind,'role-1'),'#/opportunities/role-1');
+console.log('PASS workspace search: multi-word/case matching, record context, empty and missing results, direct record routes');

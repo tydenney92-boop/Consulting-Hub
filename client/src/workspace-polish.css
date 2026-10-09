@@ -111,6 +111,29 @@ button:disabled { opacity:.6; cursor:wait; }
   .page-head > .primary,.page-head > .secondary {width:100%}
 }
 .record-link { display:inline; white-space:normal; overflow-wrap:anywhere; }
+.recruiting-stage-control {display:grid;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);font-size:14px;color:var(--muted)}
+.recruiting-stage-control select {width:100%;min-width:0;min-height:46px;border:1px solid var(--border);border-radius:8px;padding:12px;font:inherit;color:var(--ink);background:white;color-scheme:light}
+.quick-opportunity label {display:grid;gap:8px;margin-top:16px;font-size:14px;line-height:1.5;color:var(--muted);min-width:0}
+.quick-opportunity .form-grid {gap:20px;margin-top:20px}
+.quick-opportunity .form-grid label {margin:0;font-size:14px}
+.quick-opportunity input,.quick-opportunity select,.quick-opportunity textarea {box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--ink);padding:11px 12px;font:inherit;line-height:1.5}
+.quick-opportunity textarea {min-height:130px;resize:vertical}
+.quick-opportunity input::placeholder,.quick-opportunity textarea::placeholder {color:#74808e}
+.topbar {gap:16px}
+.workspace-search {position:relative;flex:1;max-width:480px;min-width:0}
+.workspace-search-input {display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:8px;background:white;padding:0 12px;min-height:44px;color:var(--muted)}
+.workspace-search-input:focus-within {outline:2px solid #426887;outline-offset:2px}
+.workspace-search-input input {width:100%;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--ink);padding:11px 0}
+.workspace-search-input > svg {flex-shrink:0}
+.workspace-search-input input:focus-visible {outline:none}
+.workspace-search-input input::-webkit-search-cancel-button {appearance:none}
+.workspace-search-popover {position:absolute;top:calc(100% + 8px);left:0;width:100%;z-index:50;background:white;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px #11192318;max-height:min(480px,65vh);overflow:auto;padding:6px}
+.workspace-search-popover button {display:grid;gap:4px;text-align:left;width:100%;border:0;border-radius:6px;background:white;padding:12px;color:var(--ink);font:inherit;cursor:pointer}
+.workspace-search-popover button[aria-selected=true] {background:#f0f3f6}
+.workspace-search-popover strong {font-size:14px;overflow-wrap:anywhere}
+.workspace-search-popover span,.workspace-search-popover p {font-size:12px;color:var(--muted);line-height:1.5;overflow-wrap:anywhere}
+.workspace-search-popover p {padding:6px 12px;margin:0}
+@media(max-width:600px) {.quick-opportunity .form-grid {grid-template-columns:minmax(0,1fr)}.quick-opportunity .span2 {grid-column:auto}.app .topbar {padding:12px 16px;gap:10px}.workspace-search-input {gap:6px;padding:0 8px}.workspace-search-input input {font-size:13px}.workspace-search-popover {width:min(340px,calc(100vw - 97px))}}
 .today-queue,.today-queue-list,.today-action,.today-action-copy,.today-action-copy > div { min-width:0; max-width:100%; }
 .today-action { display:grid; width:100%; grid-template-columns:8px minmax(0,1fr) auto; }
 .today-action strong,.today-action p { overflow-wrap:anywhere; }

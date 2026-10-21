@@ -206,6 +206,7 @@ model Application {
  dateSubmitted DateTime?
  currentStage String @default("RESEARCHING")
  status String @default("Active")
+ assessmentStatus String?
  resumeId String?
  resume Document? @relation("ResumeApplications",fields:[resumeId],references:[id])
  coverLetterId String?

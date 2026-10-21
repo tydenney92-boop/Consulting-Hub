@@ -45,6 +45,12 @@
 .network-dialog input,.network-dialog select,.network-dialog textarea,.network-page .opportunity-toolbar input{box-sizing:border-box;min-width:0;width:100%;padding:10px 12px;border:1px solid #ccd5dc;border-radius:7px;background:#fff;color:#26333e;font:inherit}
 .network-dialog textarea{resize:vertical}
 .network-completions{display:grid;gap:8px;margin-top:12px}
+.today-action-row{display:flex;align-items:center;gap:12px;min-width:0}
+.today-action-row .today-action{flex:1;min-width:0}
+.action-complete{flex-shrink:0}
+.assessment-completion{margin:16px 0}
+.assessment-completion p{color:#657383;line-height:1.5}
+@media(max-width:600px){.today-action-row{align-items:stretch;flex-direction:column;gap:6px}.today-action-row .action-complete{align-self:flex-end;margin-bottom:10px}}
 .network-completion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;cursor:pointer;overflow-wrap:anywhere}
 .network-completion input[type=checkbox]{width:18px;height:18px;min-width:18px;margin:3px 0 0;accent-color:#263747;cursor:pointer}
 .network-completion small{display:block;color:#657383;margin-top:4px;line-height:1.5}

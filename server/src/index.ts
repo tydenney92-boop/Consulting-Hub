@@ -593,7 +593,7 @@ app.get('/api/dashboard', async (req: Authed, res, next) => {
             prisma.contact.findMany({ where: { userId, nextFollowUpDate: { not: null, lte: soon } }, include: { company: true, office: true }, orderBy: { nextFollowUpDate: 'asc' } }),
             prisma.opportunity.findMany({ where: { userId, applicationDeadline: { gte: opportunityToday, lt: opportunitySoon }, status: { not: 'CLOSED' }, applications: {none:{currentStage:{not:'PREPARING_APPLICATION'}}} }, include: { company: true, office: true }, orderBy: { applicationDeadline: 'asc' } }),
             prisma.opportunity.findMany({ where: { userId, status: 'READY_TO_APPLY', applications: { none: {} }, OR: [{ applicationDeadline: null }, { applicationDeadline: { gte: opportunityToday } }] }, include: { company: true, office: true }, orderBy: { applicationDeadline: 'asc' } }),
-            prisma.application.findMany({ where: { userId, currentStage: 'ASSESSMENT' }, include: pipelineApplicationInclude }),
+            prisma.application.findMany({ where: { userId, currentStage: 'ASSESSMENT', OR: [{ assessmentStatus: null }, { assessmentStatus: { not: 'COMPLETED' } }] }, include: pipelineApplicationInclude }),
             prisma.interview.findMany({ where: { userId, archivedAt: null, completedAt: null, date: { gte: today, lte: soon } }, include: interviewInclude, orderBy: { date: 'asc' } }),
             prisma.interview.findMany({ where: { userId, archivedAt: null, completedAt: { not: null }, outcome: 'PENDING' }, include: interviewInclude, orderBy: { completedAt: 'desc' } }),
             prisma.company.findMany({ where: { userId, priority: 'HIGH', contacts: { none: {} } }, orderBy: { name: 'asc' } }),
@@ -908,6 +908,13 @@ app.patch('/api/applications/:id/documents', async (req: Authed, res, next) => {
 catch (e: any) {
     res.status(e?.status || 500).json({ error: e?.message || 'Unable to update application documents.' });
 } });
+app.patch('/api/applications/:id/assessment', async (req: Authed, res, next) => { try {
+    const userId = req.userId!, application = await owned(prisma.application, req.params.id, userId);
+    if (!application) return res.status(404).json({ error: 'Application not found.' });
+    if (typeof req.body?.completed !== 'boolean') return res.status(400).json({ error: 'Specify whether the assessment is completed.' });
+    if (application.currentStage !== 'ASSESSMENT') return res.status(409).json({ error: 'This application is not in the assessment stage.' });
+    res.json(await prisma.application.update({ where: { id: application.id }, data: { assessmentStatus: req.body.completed ? 'COMPLETED' : 'PENDING' }, include: pipelineApplicationInclude }));
+} catch (e) { next(e); } });
 app.patch('/api/applications/:id/stage', async (req: Authed, res, next) => { try {
     const application = await owned(prisma.application, req.params.id, req.userId!);
     if (!application)
@@ -1008,12 +1015,27 @@ catch (e: any) {
 app.post('/api/contacts/:id/complete-follow-up', async (req: Authed, res, next) => { try {
     const userId = req.userId!, contact = await owned(prisma.contact, req.params.id, userId);
     if (!contact) return res.status(404).json({ error: 'Contact not found.' });
-    await prisma.$transaction(async tx => {
-        await tx.task.updateMany({ where: { userId, contactId: contact.id, title: { startsWith: 'Follow up with ' }, status: { not: 'COMPLETED' } }, data: { status: 'COMPLETED', completedAt: new Date() } });
+    const completedAt = new Date();
+    const taskIds = await prisma.$transaction(async tx => {
+        const pending = await tx.task.findMany({ where: { userId, contactId: contact.id, title: { startsWith: 'Follow up with ' }, status: { not: 'COMPLETED' } }, select: { id: true } });
+        await tx.task.updateMany({ where: { userId, id: { in: pending.map(x => x.id) }, status: { not: 'COMPLETED' } }, data: { status: 'COMPLETED', completedAt } });
         await tx.contact.update({ where: { id: contact.id }, data: { nextFollowUpDate: null } });
+        return pending.map(x => x.id);
     });
-    res.json({ completed: true });
+    res.json({ completed: true, undo: { followUpDate: contact.nextFollowUpDate, completedAt, taskIds } });
 } catch (e) { next(e); } });
+app.post('/api/contacts/:id/undo-follow-up', async (req: Authed, res, next) => { try {
+    const userId = req.userId!, contact = await owned(prisma.contact, req.params.id, userId);
+    if (!contact) return res.status(404).json({ error: 'Contact not found.' });
+    const b = req.body || {}, followUpDate = b.followUpDate ? new Date(b.followUpDate) : null, completedAt = new Date(b.completedAt);
+    if ((followUpDate && Number.isNaN(followUpDate.getTime())) || Number.isNaN(completedAt.getTime()) || !Array.isArray(b.taskIds) || b.taskIds.some((id: unknown) => typeof id !== 'string')) return res.status(400).json({ error: 'Invalid follow-up undo details.' });
+    await prisma.$transaction(async tx => {
+        const restored = await tx.contact.updateMany({ where: { id: contact.id, userId, nextFollowUpDate: null }, data: { nextFollowUpDate: followUpDate } });
+        if (!restored.count) throw Object.assign(new Error('A new follow-up is already scheduled. It has not been changed.'), { status: 409 });
+        await tx.task.updateMany({ where: { id: { in: b.taskIds }, userId, contactId: contact.id, title: { startsWith: 'Follow up with ' }, status: 'COMPLETED', completedAt }, data: { status: 'NOT_STARTED', completedAt: null } });
+    });
+    res.json({ restored: true });
+} catch (e: any) { if (e.status) return res.status(e.status).json({ error: e.message }); next(e); } });
 app.get('/api/contacts/:id', async (req: Authed, res, next) => { try {
     const item = await prisma.contact.findFirst({ where: { id: String(req.params.id), userId: req.userId }, include: contactInclude(req.userId!) });
     if (!item)

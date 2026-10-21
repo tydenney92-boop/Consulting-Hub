@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "npm start",
-    "preDeployCommand": "npx prisma migrate deploy --schema prisma/schema.postgres.prisma",
+    "preDeployCommand": "node scripts/deploy-migrations.mjs",
     "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5

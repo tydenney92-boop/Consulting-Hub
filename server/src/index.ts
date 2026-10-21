@@ -1005,6 +1005,15 @@ catch (e: any) {
         return res.status(e.status).json({ error: e.message });
     next(e);
 } });
+app.post('/api/contacts/:id/complete-follow-up', async (req: Authed, res, next) => { try {
+    const userId = req.userId!, contact = await owned(prisma.contact, req.params.id, userId);
+    if (!contact) return res.status(404).json({ error: 'Contact not found.' });
+    await prisma.$transaction(async tx => {
+        await tx.task.updateMany({ where: { userId, contactId: contact.id, title: { startsWith: 'Follow up with ' }, status: { not: 'COMPLETED' } }, data: { status: 'COMPLETED', completedAt: new Date() } });
+        await tx.contact.update({ where: { id: contact.id }, data: { nextFollowUpDate: null } });
+    });
+    res.json({ completed: true });
+} catch (e) { next(e); } });
 app.get('/api/contacts/:id', async (req: Authed, res, next) => { try {
     const item = await prisma.contact.findFirst({ where: { id: String(req.params.id), userId: req.userId }, include: contactInclude(req.userId!) });
     if (!item)

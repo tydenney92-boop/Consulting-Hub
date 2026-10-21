@@ -79,6 +79,20 @@ async function main(){
   assert(!contact.interactions.some((x:any)=>x.summary==='Foreign private history'));assert(!contact.tasks.some((x:any)=>x.title==='Foreign private task'));
   await request(`/contacts/${c.id}`,a.cookie,'PATCH',{name:'Sarah QA Chen',notes:'Updated while keeping advanced data.'});
   contact=await request(`/contacts/${c.id}`,a.cookie).then(r=>r.json());assert.equal(contact.email,c.email);assert.equal(contact.officeId,office.id);
+  const reminder=await request('/contacts',a.cookie,'POST',{name:'Followup Completion QA',nextFollowUpDate:today},201).then(r=>r.json());
+  const task=await prisma.task.create({data:{userId:a.user.id,contactId:reminder.id,title:'Follow up with Followup Completion QA',dueDate:new Date(today)}});
+  const unrelated=await prisma.task.create({data:{userId:a.user.id,contactId:reminder.id,title:'Research firm'}});
+  await request(`/contacts/${reminder.id}/complete-follow-up`,b.cookie,'POST',{userId:a.user.id},404);
+  await request(`/contacts/${reminder.id}/complete-follow-up`,'','POST',{},401);
+  assert((await prisma.contact.findUniqueOrThrow({where:{id:reminder.id}})).nextFollowUpDate);
+  const historyCount=await prisma.interaction.count({where:{contactId:reminder.id}});
+  await request(`/contacts/${reminder.id}/complete-follow-up`,a.cookie,'POST',{});
+  await request(`/contacts/${reminder.id}/complete-follow-up`,a.cookie,'POST',{});
+  assert.equal((await prisma.contact.findUniqueOrThrow({where:{id:reminder.id}})).nextFollowUpDate,null);
+  const completed=await prisma.task.findUniqueOrThrow({where:{id:task.id}});assert.equal(completed.status,'COMPLETED');assert(completed.completedAt);
+  assert.notEqual((await prisma.task.findUniqueOrThrow({where:{id:unrelated.id}})).status,'COMPLETED');
+  assert.equal(await prisma.interaction.count({where:{contactId:reminder.id}}),historyCount);
+  dashboard=await request('/dashboard',a.cookie).then(r=>r.json());assert(!dashboard.followUps.some((x:any)=>x.id===reminder.id));
   assert.equal(errors,'');
   console.log('✓ Contacts, interaction creation/editing, chronological Last Contacted recalculation, follow-up task synchronization, dashboard suppression, and ownership passed.');
   if(process.env.KEEP_NETWORK_QA==='true'){console.log('Local QA: http://127.0.0.1:4346 · network-a@example.test / Local-network-QA-2026!');await new Promise(()=>{})}
